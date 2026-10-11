@@ -67,16 +67,20 @@ Si la primera subida falla por el enlace `SELF`, quita el bloque `[[services]]`,
 
 ```bash
 cd bot && npm ci && npm test                       # pruebas del agente
-cd app/android && ./gradlew assemblePublicaRelease # compilar la app
+cd app/android && ./gradlew assemblePublicaRelease # compilar la app (ver app/android/BUILDING.md)
 ```
 
 Tras cambiar `app/web/`, cópialo a `app/android/app/src/main/assets/web/` antes de compilar.
+
+## F-Droid
+
+El proyecto está preparado para F-Droid: licencia MIT, sin dependencias privativas, compilación estándar con Gradle, fichas en `fastlane/metadata/android/` y la receta en [`fdroid/com.cardondefi.app.yml`](fdroid/com.cardondefi.app.yml). Aún no está incluido: falta enviar esa receta a [fdroiddata](https://gitlab.com/fdroid/fdroiddata) y pasar su revisión. F-Droid compila y firma con su propia llave, así que su APK y la de GitHub no se actualizan entre sí.
 
 ## Estado del piloto
 
 - Probado con dinero real por su autor en Polygon y Polkadot Hub, con montos pequeños.
 - El instalador automático es nuevo: si falla, el detalle queda en la pestaña **Actions** de tu repositorio `cardon-nube`. Abre un *issue* con ese error (sin pegar claves).
-- Los límites (2 USDC por orden, 8 operaciones al día) vienen fijos en `bot/wrangler.plantilla.toml`.
+- Los límites empiezan en 2 USDC por orden y 8 operaciones al día; se cambian en la app (Configuración → Reglas duras).
 - Hydration está solo en simulación.
 
 ## Apoyar

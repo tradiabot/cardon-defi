@@ -1,0 +1,18 @@
+Cardón DeFi es un agente de trading descentralizado, en versión piloto. Opera en exchanges descentralizados con tu propia wallet y desde tu propia nube: no hay servidor central y nadie más custodia tu dinero ni tus claves.
+
+<b>Cómo funciona</b>
+• La app crea tu wallet en el teléfono y te guía, paso a paso, para instalar tu propio agente en tus cuentas gratuitas de GitHub y Cloudflare.
+• El agente corre 24/7 en tu Cloudflare. Cada cinco minutos lee el precio, consulta a varias IAs y deja órdenes condicionales de compra y venta.
+• Las reglas duras (ganancia mínima, topes diarios, reservas, coste máximo) viven en el código del agente, no en la IA.
+• Todo empieza en simulación. Tú decides cuándo pasar cada mercado a dinero real.
+
+<b>Mercados</b>
+Pares contra USDC en Polygon (Uniswap V3: POL, WETH, WBTC, LINK, AAVE) y en Polkadot Hub (pool nativo DOT/USDC), con la misma dirección 0x.
+
+<b>Tus claves</b>
+La frase de respaldo se guarda cifrada en el teléfono. Los tokens de GitHub y Cloudflare van cifrados a tu propio repositorio privado. La clave de firma solo sale del teléfono si activas dinero real, y va directo a tu Cloudflare tras tu huella.
+
+<b>Aviso</b>
+No es asesoría financiera ni garantiza ganancias. Los criptoactivos son muy volátiles y puedes perder todo el dinero que uses. El software se entrega «tal cual», sin garantías.
+
+Necesita servicios de terceros (GitHub, Cloudflare y, opcionalmente, proveedores de IA) en cuentas que son tuyas.

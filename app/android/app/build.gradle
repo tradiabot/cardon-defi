@@ -8,8 +8,8 @@ android {
         applicationId 'com.defipoldot.trading'
         minSdk 23
         targetSdk 34
-        versionCode 54
-        versionName '1.13.0'
+        versionCode 55
+        versionName '1.13.1'
         aaptOptions { ignoreAssetsPattern '!.svn:!*.scc:.*:!CVS:!thumbs.db:!*~' }
     }
     // «publica»: la app que se comparte; viene vacía y cada persona instala su propio agente.
@@ -19,18 +19,25 @@ android {
         publica {
             dimension 'edicion'
             applicationId 'com.cardondefi.app'
-            versionCode 100
-            versionName '1.0.0-piloto'
+            versionCode 101
+            versionName '1.0.1-piloto'
         }
         personal { dimension 'edicion' }
     }
     buildTypes {
-        // Sin llave propia de publicación todavía: se firma con la llave de depuración, pero sin ser depurable.
-        release { signingConfig signingConfigs.debug }
+        // Para repartir la APK fuera de una tienda: ./gradlew assemblePublicaRelease -PfirmaLocal
+        // la firma con la llave de depuración de este equipo (sin ser depurable). Sin esa opción queda sin firmar,
+        // que es lo que espera F-Droid para firmarla con su propia llave.
+        release { if (project.hasProperty('firmaLocal')) signingConfig signingConfigs.debug }
+    }
+    // Sin el bloque de dependencias que AGP añade a la APK: no aporta nada y F-Droid lo rechaza.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_21
-        targetCompatibility JavaVersion.VERSION_21
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 

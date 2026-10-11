@@ -1,7 +1,12 @@
-# Android build profile
+# Compilar la app
 
-Este shell usa Gradle 8.11.1, Android Gradle Plugin 8.7.2, compile/target SDK 34, Java 21 y assets web locales dentro de `app/src/main/assets/web/`. SDK 34 se usa por compatibilidad con el `aapt2` ARM64 disponible en este entorno. La Activity es un WebView local equivalente al shell de una app Capacitor.
+Requisitos: JDK 17 o superior y el SDK de Android (plataforma 34, build-tools 34.0.0). El contenedor es una Activity con un WebView que carga la interfaz desde `app/src/main/assets/web/`.
 
-El backend no se empaqueta en el APK. Para conectar la app a un backend se puede cambiar `window.DEFI_API_BASE` antes de empaquetar o inyectarlo desde el host; el frontend conserva el fallback mock offline.
+```bash
+./gradlew assemblePublicaRelease              # APK sin firmar (la que compila F-Droid)
+./gradlew assemblePublicaRelease -PfirmaLocal # firmada con la llave de depuración de tu equipo
+```
 
-La Activity incluye el puente local `AndroidWallet` para crear/importar cuentas EVM y cifrar sus secretos con Android Keystore. Ese puente no transmite claves al backend. La versión `0.5.0` muestra explícitamente si la interfaz está ejecutándose dentro del APK o en navegador.
+Tras cambiar `app/web/`, cópialo a `app/android/app/src/main/assets/web/`.
+
+La edición `personal` es para una compilación propia que ya apunte a tu agente: crea `app/src/personal/assets/web/config.js` (no se versiona) con `window.CARDON = { publica: false, api: 'https://TU-AGENTE.workers.dev/api/v1' }`.

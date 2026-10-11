@@ -1,4 +1,5 @@
 import { CYCLE_MS, HISTORY_DAYS, PENDING_TIMEOUT_MS, STALE_MS, settings, type Env, type Settings } from './config';
+import { applyLimits, storedLimits } from './limits';
 import { DEFAULT_MARKET, kvKey, MARKETS, marketConfig, marketSettings, VENUES, type Market, type MarketMode } from './markets';
 import { baseOf, gasShort, venueBalances, venuePrices, venueQuote, venueSettlement, venueSubmit, type Balances } from './venues';
 import { features, technicalSignal, type Action, type Features } from './indicators';
@@ -212,7 +213,7 @@ async function superviseOrders(db: D1Database, m: Market, ai: AiDecision, s: Set
 
 async function cycle(env: Env, m: Market, mode: MarketMode, now: number, opts: { lead: boolean; trackDot: boolean }): Promise<CycleStatus> {
   const db = env.DB;
-  const s = marketSettings(settings(env), m, mode);
+  const s = marketSettings(applyLimits(settings(env), await storedLimits(env)), m, mode);
   const started = Date.now();
   const status: CycleStatus = { ts: now, market: m.id, mode: s.mode, ok: false, durationMs: 0, errors: [], warnings: [], prices: {}, features: null, onchain: null, onchainLast: null, decision: null, trade: null, settled: null, orders: null };
   const writes: D1PreparedStatement[] = [];

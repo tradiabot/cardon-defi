@@ -1,0 +1,18 @@
+Cardón DeFi is a decentralized trading agent, in pilot stage. It trades on decentralized exchanges with your own wallet from your own cloud: there is no central server and nobody else holds your funds or keys.
+
+<b>How it works</b>
+• The app creates your wallet on the phone and guides you, step by step, to install your own agent in your free GitHub and Cloudflare accounts.
+• The agent runs 24/7 on your Cloudflare. Every five minutes it reads the price, asks several AI models and places conditional buy and sell orders.
+• Hard rules (minimum profit, daily caps, reserves, maximum cost) live in the agent's code, not in the AI.
+• Everything starts in simulation. You decide when to switch each market to real funds.
+
+<b>Markets</b>
+USDC pairs on Polygon (Uniswap V3: POL, WETH, WBTC, LINK, AAVE) and Polkadot Hub (native DOT/USDC pool), with the same 0x address.
+
+<b>Your keys</b>
+The recovery phrase is stored encrypted on the phone. GitHub and Cloudflare tokens are sent encrypted to your own private repository. The signing key leaves the phone only if you enable real funds, and goes straight to your Cloudflare after your fingerprint.
+
+<b>Notice</b>
+Not financial advice; no profit is guaranteed. Crypto assets are highly volatile and you can lose all the money you use. The software is provided "as is", without warranty. The interface is in Spanish for now.
+
+It needs third-party services (GitHub, Cloudflare and, optionally, AI providers) in accounts that you own.

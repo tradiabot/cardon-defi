@@ -1,6 +1,7 @@
 import { type Env, type Settings } from './config';
 import { type Control, type CycleStatus } from './engine';
 import { loadMarket, type MarketCtx } from './context';
+import { applyLimits, LIMIT_RANGES, limitsEditable, saveLimits } from './limits';
 import { DEFAULT_MARKET, enabledMarkets, market, marketConfig, MARKETS, MAX_ENABLED, updateMarket, VENUES, type Market } from './markets';
 import { baseOf, venueQuote } from './venues';
 import { getKv, putKv } from './db';
@@ -300,11 +301,13 @@ async function logs(env: Env) {
   }));
 }
 
-function config(s: Settings) {
+function config(s: Settings, env: Env) {
+  const editable = limitsEditable(env);
   return {
     mode: 'auto', minConfidence: s.minConfidence, minReserveUsdc: s.minReserveUsdc, minNetProfitUsdc: s.minProfitPct,
     targetUsdc: 50, targetPol: 50, targetDot: 0, maxTradeUsdc: s.maxTradeUsdc, maxTradesPerDay: s.maxTradesPerDay,
-    note: 'Los límites del bot se cambian en wrangler.toml de DEX Pilot',
+    editable, ranges: editable ? LIMIT_RANGES : undefined,
+    note: editable ? 'Tus límites se aplican en tu nube desde el siguiente ciclo' : 'Los límites del bot se cambian en wrangler.toml de DEX Pilot',
   };
 }
 
@@ -385,9 +388,14 @@ export async function handleV1(request: Request, env: Env, path: string, url: UR
     case 'GET /policies': return reply({ policies: [{ id: 'dex_pilot_confluence', label: 'DEX Pilot · IA + técnico', active: true, risk: 'bajo', kind: c.s.mode.toUpperCase(), assets: `${m.id}/USDC`, requiresApproval: false }] });
     case 'POST /policies/activate': return body.policy === 'dex_pilot_confluence' ? reply({ ok: true }) : fail('Perfil no disponible en DEX Pilot');
     case 'GET /logs': return reply({ logs: await logs(env) });
-    case 'GET /config': return reply({ config: config(c.s) });
+    case 'GET /config': return reply({ config: config(c.s, env) });
     case 'POST /config': {
-      const cur = config(c.s);
+      if (limitsEditable(env) && Object.keys(body).some(k => k in LIMIT_RANGES || k === 'minNetProfitUsdc')) {
+        const r = await saveLimits(env, { ...body, minProfitPct: body.minProfitPct ?? body.minNetProfitUsdc });
+        if ('error' in r) return fail(r.error);
+        return reply({ config: config(applyLimits(c.s, r.limits), env) });
+      }
+      const cur = config(c.s, env);
       if (Object.keys(body).every(k => k === 'mode' || k === 'minReserveUsdc')) return reply({ config: cur });
       const changed = Object.entries(body).filter(([k, v]) => k in cur && (cur as Record<string, unknown>)[k] !== v && !['targetUsdc', 'targetPol', 'targetDot'].includes(k));
       if (changed.length) return fail(`No se puede cambiar ${changed.map(([k]) => k).join(', ')} desde la app: se cambia en wrangler.toml de DEX Pilot`);

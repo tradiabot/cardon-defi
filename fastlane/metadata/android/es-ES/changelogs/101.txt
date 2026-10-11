@@ -1,0 +1,1 @@
+Límites ajustables desde la app, código de cifrado legible y compilación lista para F-Droid.

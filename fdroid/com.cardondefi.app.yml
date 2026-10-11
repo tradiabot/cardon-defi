@@ -1,0 +1,32 @@
+# Ficha para https://gitlab.com/fdroid/fdroiddata (va en metadata/com.cardondefi.app.yml de ese repositorio).
+Categories:
+  - Money
+License: MIT
+AuthorName: tradiabot
+WebSite: https://tradiabot.github.io/cardon/
+SourceCode: https://github.com/tradiabot/cardon-defi
+IssueTracker: https://github.com/tradiabot/cardon-defi/issues
+Changelog: https://github.com/tradiabot/cardon-defi/releases
+Bitcoin: bc1qd9j45f4t0jwyhjhqh2kvz2cr7k8xye460rr2y7
+
+AutoName: Cardón DeFi
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: The user's own agent is installed and runs on GitHub and Cloudflare accounts; AI providers are optional.
+
+RepoType: git
+Repo: https://github.com/tradiabot/cardon-defi.git
+
+Builds:
+  - versionName: 1.0.1-piloto
+    versionCode: 101
+    commit: v1.0.1-piloto
+    subdir: app/android/app
+    gradle:
+      - publica
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.1-piloto
+CurrentVersionCode: 101
