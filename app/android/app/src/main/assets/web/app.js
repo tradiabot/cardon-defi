@@ -201,6 +201,29 @@ function render() {
   );
   if (el("desk-chart")) loadDeskChart();
   renderGlobal();
+  syncAssetDetails();
+}
+/* Detalle por moneda (lo que antes eran las pestañas POL y DOT): en Global quedan plegados; al elegir una moneda se abre el suyo. */
+function syncAssetDetails() {
+  const view = typeof GLOBAL !== "undefined" && GLOBAL ? "GLOBAL" : typeof MARKET !== "undefined" ? MARKET : "POL";
+  const changed = window.assetDetailView !== view;
+  window.assetDetailView = view;
+  let shown = 0;
+  document.querySelectorAll(".asset-detail").forEach((d) => {
+    const id = d.dataset.asset,
+      market = (cache.markets || []).find((m) => m.id === id);
+    d.hidden = (cache.markets || []).length ? !(market && market.enabled) || (view !== "GLOBAL" && view !== id) : false;
+    if (changed) d.open = view === id;
+    if (!d.hidden) shown++;
+    if (!d.dataset.bound) {
+      d.dataset.bound = "1";
+      d.addEventListener("toggle", () => {
+        if (d.open) loadAssetChart(id, window.chartRanges?.[id] || "1h");
+      });
+    }
+  });
+  const box = el("asset-details");
+  if (box) box.hidden = !shown;
 }
 function renderLearning() {
   const target = el("learning-summary");

@@ -1447,3 +1447,16 @@ button:disabled {
   opacity: 0.8;
   margin: 4px 0 0;
 }
+
+/* Detalle por moneda dentro de Inicio */
+#asset-details { margin-top: 9px; }
+#asset-details[hidden], .asset-detail[hidden] { display: none; }
+.ad-head { margin: 4px 2px 8px; }
+.asset-detail > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.asset-detail > summary::-webkit-details-marker { display: none; }
+.asset-detail > summary::after { content: "+"; margin-left: auto; color: var(--mint); font-size: 18px; line-height: 1; }
+.asset-detail[open] > summary::after { content: "–"; }
+.asset-detail[open] > summary { margin-bottom: 12px; }
+.asset-detail .asset-mark { flex: none; }
+.ad-title b { display: block; font-size: 14px; }
+.ad-title small { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
