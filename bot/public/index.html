@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DEX Pilot</title>
+  <meta name="theme-color" content="#2f5bd8">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icon-180.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>DEX Pilot</h1>
+      <p class="sub">POL/USDC · Polygon · Cloudflare Workers</p>
+    </div>
+    <div class="badges">
+      <span id="mode" class="pill">—</span>
+      <span id="engine" class="pill">—</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="grid kpis">
+      <article class="card"><h2>POL</h2><p class="big" id="pol-price">—</p><p class="muted" id="pol-change">—</p></article>
+      <article class="card"><h2>DOT <span class="tag">solo seguimiento</span></h2><p class="big" id="dot-price">—</p><p class="muted" id="dot-change">—</p></article>
+      <article class="card"><h2 id="book-title">Cartera</h2><p class="big" id="paper-value">—</p><p class="muted" id="paper-pnl">—</p></article>
+      <article class="card"><h2>Último ciclo</h2><p class="big" id="cycle-age">—</p><p class="muted" id="cycle-info">—</p></article>
+    </section>
+
+    <section class="card">
+      <div class="row"><h2>POL · 24 h</h2><span class="muted" id="chart-meta"></span></div>
+      <svg id="chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Precio POL últimas 24 horas"></svg>
+    </section>
+
+    <section class="grid two">
+      <article class="card">
+        <h2>Última decisión</h2>
+        <dl class="kv" id="decision"></dl>
+      </article>
+      <article class="card">
+        <h2>Posición</h2>
+        <dl class="kv" id="position"></dl>
+        <h3>Wallet real (solo lectura)</h3>
+        <dl class="kv" id="onchain"></dl>
+      </article>
+    </section>
+
+    <section class="card" id="errors-card" hidden>
+      <h2>Errores y avisos del último ciclo</h2>
+      <ul id="errors" class="errors"></ul>
+    </section>
+
+    <section class="card">
+      <div class="row"><h2>Órdenes condicionales</h2><span class="muted" id="orders-meta"></span></div>
+      <div class="table"><table><thead><tr><th>#</th><th>Lado</th><th>Disparo</th><th>Monto</th><th>Estado</th><th>Origen</th><th>Detalle</th><th></th></tr></thead><tbody id="orders"></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <h2>Operaciones</h2>
+      <div class="table"><table><thead><tr><th>Hora</th><th>Lado</th><th>Entra</th><th>Sale</th><th>Precio</th><th>Coste</th><th>P/L</th><th>Estado</th><th>Motivo</th></tr></thead><tbody id="trades"></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <h2>Decisiones</h2>
+      <div class="table"><table><thead><tr><th>Hora</th><th>Técnico</th><th>IA</th><th>Conf.</th><th>Final</th><th>Bloqueo</th><th>Razón IA</th></tr></thead><tbody id="decisions"></tbody></table></div>
+    </section>
+
+    <section class="grid two">
+      <article class="card">
+        <h2>Reglas duras</h2>
+        <dl class="kv" id="limits"></dl>
+      </article>
+      <article class="card">
+        <h2>Control</h2>
+        <p class="muted" id="control-state">—</p>
+        <label class="field">Token de administrador
+          <input id="token" type="password" autocomplete="off" placeholder="ADMIN_TOKEN">
+        </label>
+        <div class="actions">
+          <button id="btn-pause" class="danger">Pausar</button>
+          <button id="btn-resume">Reanudar</button>
+          <button id="btn-run">Ejecutar ciclo ahora</button>
+        </div>
+        <p class="muted" id="control-msg"></p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="muted">Precio y cotizaciones: ParaSwap · DOT: CoinGecko · IA: Groq · Datos: Cloudflare D1</footer>
+  <script src="/app.js"></script>
+</body>
+</html>

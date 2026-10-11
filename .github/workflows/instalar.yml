@@ -1,0 +1,108 @@
+name: Instalar Cardón DeFi
+
+# Despliega (o actualiza) tu agente en TU cuenta de Cloudflare.
+# La app lo lanza sola; también puedes ejecutarlo a mano desde la pestaña Actions.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cardon-instalar
+  cancel-in-progress: false
+
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      NOMBRE: cardon-defi
+      BASE: cardon_defi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Revisar claves
+        env:
+          ADMIN: ${{ secrets.ADMIN_TOKEN }}
+          WALLET: ${{ secrets.WALLET_ADDRESS }}
+        run: |
+          falta=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || falta="$falta CLOUDFLARE_API_TOKEN"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || falta="$falta CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$ADMIN" ] || falta="$falta ADMIN_TOKEN"
+          [ -n "$WALLET" ] || falta="$falta WALLET_ADDRESS"
+          if [ -n "$falta" ]; then echo "::error::Faltan secretos:$falta"; exit 1; fi
+          echo "$WALLET" | grep -Eq '^0x[0-9a-fA-F]{40}$' || { echo "::error::WALLET_ADDRESS no es una dirección 0x válida"; exit 1; }
+
+      - name: Subdominio workers.dev
+        id: sub
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+          sub=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api" | jq -r '.result.subdomain // empty' || true)
+          if [ -z "$sub" ]; then
+            nuevo="cardon-$(openssl rand -hex 3)"
+            sub=$(curl -fsS -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+              --data "{\"subdomain\":\"$nuevo\"}" "$api" | jq -r '.result.subdomain')
+          fi
+          [ -n "$sub" ] && [ "$sub" != "null" ] || { echo "::error::No pude obtener ni crear el subdominio workers.dev. Revisa los permisos del token de Cloudflare (Workers Scripts: Edit)."; exit 1; }
+          echo "sub=$sub" >> "$GITHUB_OUTPUT"
+
+      - name: Base de datos D1
+        id: d1
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database"
+          id=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api?name=$BASE&per_page=50" | jq -r --arg n "$BASE" '.result[] | select(.name==$n) | .uuid' | head -1 || true)
+          if [ -z "$id" ]; then
+            id=$(curl -fsS -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+              --data "{\"name\":\"$BASE\"}" "$api" | jq -r '.result.uuid')
+          fi
+          [ -n "$id" ] && [ "$id" != "null" ] || { echo "::error::No pude crear la base de datos D1. Revisa que el token de Cloudflare tenga el permiso D1: Edit."; exit 1; }
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+      - name: Configurar y desplegar
+        working-directory: bot
+        env:
+          ADMIN: ${{ secrets.ADMIN_TOKEN }}
+          WALLET: ${{ secrets.WALLET_ADDRESS }}
+          GROQ: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          url="https://$NOMBRE.${{ steps.sub.outputs.sub }}.workers.dev"
+          sed -e "s/__ACCOUNT_ID__/$CLOUDFLARE_ACCOUNT_ID/" -e "s/__D1_ID__/${{ steps.d1.outputs.id }}/" \
+              -e "s/__WALLET_ADDRESS__/$WALLET/" -e "s#__PANEL_URL__#$url#" wrangler.plantilla.toml > wrangler.toml
+          npm ci --no-audit --no-fund
+          npx wrangler d1 migrations apply "$BASE" --remote
+          # La primera vez el Worker aún no existe y no puede enlazarse consigo mismo: se sube sin ese enlace y luego completo.
+          existe=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/services/$NOMBRE")
+          if [ "$existe" != "200" ]; then
+            awk '/^\[\[services\]\]/{omitir=1; next} omitir && /^(binding|service) *=/{next} {omitir=0; print}' wrangler.toml > wrangler.primera.toml
+            npx wrangler deploy -c wrangler.primera.toml
+          fi
+          npx wrangler deploy
+          printf '%s' "$ADMIN" | npx wrangler secret put ADMIN_TOKEN
+          if [ -n "$GROQ" ]; then printf '%s' "$GROQ" | npx wrangler secret put GROQ_API_KEY; fi
+
+      - name: Comprobar y guardar la dirección
+        run: |
+          url="https://$NOMBRE.${{ steps.sub.outputs.sub }}.workers.dev"
+          for i in $(seq 1 20); do
+            if curl -fsS "$url/api/status" | jq -e '.mode' >/dev/null; then ok=1; break; fi
+            sleep 6
+          done
+          [ -n "$ok" ] || { echo "::error::El agente no respondió en $url"; exit 1; }
+          # Arranca el reloj propio sin esperar al primer cron.
+          curl -fsS "$url/api/clock" >/dev/null || true
+          jq -n --arg url "$url" --arg v "$(jq -r .version bot/package.json)" --arg ts "$(date -u +%FT%TZ)" '{url:$url,version:$v,instalado:$ts}' > cardon.json
+          git config user.name "cardon-defi"
+          git config user.email "cardon-defi@users.noreply.github.com"
+          git add cardon.json
+          git diff --cached --quiet || git commit -m "Cardón DeFi instalado en $url"
+          git push
+          echo "### 🌵 Cardón DeFi listo en $url" >> "$GITHUB_STEP_SUMMARY"

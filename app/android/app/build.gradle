@@ -1,0 +1,47 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.defipoldot.trading'
+    compileSdk 34
+    buildToolsVersion '34.0.0'
+    defaultConfig {
+        applicationId 'com.defipoldot.trading'
+        minSdk 23
+        targetSdk 34
+        versionCode 54
+        versionName '1.13.0'
+        aaptOptions { ignoreAssetsPattern '!.svn:!*.scc:.*:!CVS:!thumbs.db:!*~' }
+    }
+    // «publica»: la app que se comparte; viene vacía y cada persona instala su propio agente.
+    // «personal»: compilación propia con la dirección de tu agente en src/personal/assets/web/config.js (no se versiona).
+    flavorDimensions 'edicion'
+    productFlavors {
+        publica {
+            dimension 'edicion'
+            applicationId 'com.cardondefi.app'
+            versionCode 100
+            versionName '1.0.0-piloto'
+        }
+        personal { dimension 'edicion' }
+    }
+    buildTypes {
+        // Sin llave propia de publicación todavía: se firma con la llave de depuración, pero sin ser depurable.
+        release { signingConfig signingConfigs.debug }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+dependencies {
+    implementation 'org.web3j:crypto:4.12.3'
+}
+
+android {
+    packaging {
+        resources {
+            excludes += ['META-INF/DISCLAIMER', 'META-INF/INDEX.LIST', 'META-INF/io.netty.versions.properties', 'META-INF/DEPENDENCIES', 'META-INF/FastDoubleParser-LICENSE', 'META-INF/FastDoubleParser-NOTICE', 'META-INF/thirdparty-LICENSE']
+        }
+    }
+}

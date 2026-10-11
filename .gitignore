@@ -1,0 +1,14 @@
+node_modules
+.wrangler/
+.dev.vars
+dist/
+bot/wrangler.toml
+bot/wrangler.primera.toml
+app/android/app/build/
+app/android/build/
+app/android/.gradle/
+app/android/local.properties
+app/android/app/src/personal/
+*.apk
+*.jks
+*.keystore

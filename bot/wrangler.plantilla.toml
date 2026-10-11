@@ -1,0 +1,56 @@
+# Plantilla de configuración. El instalador (.github/workflows/instalar.yml) la copia a wrangler.toml
+# y sustituye los valores entre guiones bajos. No pongas secretos en este archivo.
+name = "cardon-defi"
+main = "src/worker.ts"
+compatibility_date = "2025-09-01"
+account_id = "__ACCOUNT_ID__"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# El propio Worker, para correr el ciclo de cada mercado extra en una invocación aparte.
+[[services]]
+binding = "SELF"
+service = "cardon-defi"
+
+# Reloj propio: una alarma que lanza los ciclos cada 5 min aunque el cron de Cloudflare se retrase.
+[[durable_objects.bindings]]
+name = "CLOCK"
+class_name = "Clock"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Clock"]
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cardon_defi"
+database_id = "__D1_ID__"
+migrations_dir = "migrations"
+
+[vars]
+# «app»: todo empieza en simulación y cada mercado se pasa a dinero real desde la app.
+MODE = "app"
+GAS_RESERVE_POL = "2"
+SLIPPAGE_BPS = "50"
+WALLET_ADDRESS = "__WALLET_ADDRESS__"
+POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com,https://polygon.drpc.org,https://1rpc.io/matic,https://polygon.api.onfinality.io/public"
+# Orden de prueba de la IA. «kilo:» = Kilo (gratis, sin cuenta ni clave); sin prefijo = Groq (necesita GROQ_API_KEY).
+GROQ_MODELS = "kilo:nvidia/nemotron-3-super-120b-a12b:free,qwen/qwen3.8-27b,kilo:nvidia/nemotron-3-ultra-550b-a55b:free,openai/gpt-oss-120b"
+AI_EVERY_MINUTES = "15"
+MAX_TRADE_USDC = "2"
+MAX_TRADES_PER_DAY = "8"
+MIN_CONFIDENCE = "65"
+MIN_RESERVE_USDC = "0.5"
+MIN_PROFIT_PCT = "1"
+STOP_LOSS_PCT = "3"
+COOLDOWN_MINUTES = "15"
+MAX_COST_PCT = "1"
+PANEL_URL = "__PANEL_URL__"
+
+# Secretos (nunca en este archivo): ADMIN_TOKEN, GROQ_API_KEY (opcional), WALLET_PRIVATE_KEY (solo para dinero real;
+# la app la sube directo a tu Cloudflare, no pasa por GitHub), NTFY_TOPIC (alertas, opcional).

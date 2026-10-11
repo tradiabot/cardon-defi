@@ -1,0 +1,6 @@
+ALTER TABLE trades ADD COLUMN status TEXT NOT NULL DEFAULT 'SIMULADA';
+ALTER TABLE trades ADD COLUMN tx_hash TEXT;
+ALTER TABLE trades ADD COLUMN approve_hash TEXT;
+ALTER TABLE trades ADD COLUMN settled_at INTEGER;
+ALTER TABLE trades ADD COLUMN error TEXT;
+CREATE INDEX trades_status ON trades (status);
