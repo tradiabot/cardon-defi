@@ -1,6 +1,11 @@
-# Ficha para https://gitlab.com/fdroid/fdroiddata (va en metadata/com.cardondefi.app.yml de ese repositorio).
+# Ficha para https://gitlab.com/fdroid/fdroiddata (va en metadata/com.cardondefi.app.yml de ese repositorio). Validada con fdroid lint 2.4.5.
+AntiFeatures:
+  NonFreeNet:
+    en-US: The user's own agent is installed and runs on GitHub and Cloudflare accounts;
+      AI providers are optional.
 Categories:
-  - Money
+  - Market & Price
+  - Wallet
 License: MIT
 AuthorName: tradiabot
 WebSite: https://tradiabot.github.io/cardon/
@@ -10,10 +15,6 @@ Changelog: https://github.com/tradiabot/cardon-defi/releases
 Bitcoin: bc1qd9j45f4t0jwyhjhqh2kvz2cr7k8xye460rr2y7
 
 AutoName: Cardón DeFi
-
-AntiFeatures:
-  NonFreeNet:
-    en-US: The user's own agent is installed and runs on GitHub and Cloudflare accounts; AI providers are optional.
 
 RepoType: git
 Repo: https://github.com/tradiabot/cardon-defi.git
