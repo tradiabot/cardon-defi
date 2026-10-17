@@ -36,3 +36,17 @@ export async function tradeStats(db: D1Database, dayStart: number, mode: 'PAPER'
     .first<{ today: number | null; last: number | null }>();
   return { today: row?.today ?? 0, lastTs: row?.last ?? null };
 }
+
+// Los mismos índices que migrations/0006: se crean también desde el ciclo para que una base ya instalada
+// se repare sola aunque nadie aplique la migración (el límite diario de lecturas impide hacerlo a mano).
+const READ_INDEXES = [
+  'CREATE INDEX IF NOT EXISTS prices_ts ON prices (ts)',
+  'CREATE INDEX IF NOT EXISTS trades_mode_symbol_ts ON trades (mode, symbol, ts)',
+];
+let readIndexesReady = false;
+
+export async function ensureReadIndexes(db: D1Database): Promise<void> {
+  if (readIndexesReady) return;
+  await db.batch(READ_INDEXES.map(sql => db.prepare(sql)));
+  readIndexesReady = true;
+}

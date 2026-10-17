@@ -177,6 +177,18 @@ public class MainActivity extends Activity {
         WalletBridge(Activity activity) { this.activity = activity; this.context = activity.getApplicationContext(); }
         void setWebView(WebView webView) { this.webView = webView; }
 
+        /** Versión instalada y tienda de origen: el aviso de actualizaciones no ofrece la APK de GitHub a quien instaló desde F-Droid (otra firma). */
+        @JavascriptInterface public String appInfo() {
+            try {
+                android.content.pm.PackageManager pm = context.getPackageManager();
+                android.content.pm.PackageInfo info = pm.getPackageInfo(context.getPackageName(), 0);
+                String installer = pm.getInstallerPackageName(context.getPackageName());
+                return new JSONObject().put("version", info.versionName).put("installer", installer == null ? "" : installer).toString();
+            } catch (Exception error) {
+                return error(error.getClass().getSimpleName());
+            }
+        }
+
         @JavascriptInterface public String authorizeTrading(String message) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return error("BIOMETRIC_API_REQUIRED");
             try {

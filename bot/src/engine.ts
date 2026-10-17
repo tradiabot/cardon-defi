@@ -10,7 +10,7 @@ import type { DexQuote } from './dex';
 import { buyGuard, checkExecution, gate, orderSize, stopLossSize } from './strategy';
 import { applyFill, applyTrade, botUnrealizedPct, seed, unrealizedPct, type Portfolio } from './paper';
 import { SubmitError } from './live';
-import { acquireLock, getKv, priceSeries, putKv, releaseLock, tradeStats } from './db';
+import { acquireLock, ensureReadIndexes, getKv, priceSeries, putKv, releaseLock, tradeStats } from './db';
 import { alert, sendAlerts, type Alert } from './alerts';
 import { costBasis, desiredAiOrders, EST_COST_PCT, MAX_BUY_DISCOUNT_PCT, ORDER_TTL_MS, pickTriggered, reconcile, sellFloor, type Order, type Side } from './orders';
 
@@ -242,6 +242,7 @@ async function cycle(env: Env, m: Market, mode: MarketMode, now: number, opts: {
       .bind(now, m.id, (error as Error).message));
     return finish();
   }
+  await ensureReadIndexes(db);
   await db.batch([
     ...Object.entries(status.prices).map(([sym, q]) => db.prepare('INSERT OR IGNORE INTO prices (ts, symbol, usd) VALUES (?, ?, ?)').bind(now, sym, q.usd)),
     db.prepare('DELETE FROM prices WHERE ts < ?').bind(now - HISTORY_DAYS * 86_400_000),

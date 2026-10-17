@@ -652,6 +652,118 @@
     }
   };
 
+  /* ---------- Actualizaciones: último lanzamiento en GitHub ---------- */
+  var RELEASES = "https://api.github.com/repos/" + (C.plantilla || "tradiabot/cardon-defi") + "/releases/latest",
+    FDROID_PAGE = "https://f-droid.org/packages/com.cardondefi.app/",
+    UPD_EVERY = 12 * 3600 * 1000;
+  function appInfo() {
+    var r = NATIVE && NATIVE.appInfo ? native("appInfo") : {};
+    return { version: r.version || C.version || "", installer: r.installer || "" };
+  }
+  function fromFdroid(installer) {
+    return /fdroid|droidify|neostore|izzy/i.test(installer || "");
+  }
+  function versionParts(v) {
+    return (String(v || "").replace(/^v/i, "").match(/\d+/g) || []).slice(0, 3).map(Number);
+  }
+  function isNewer(remote, local) {
+    var a = versionParts(remote),
+      b = versionParts(local);
+    if (!a.length) return false;
+    for (var i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0);
+    return false;
+  }
+  function autoUpdates() {
+    var v = get("cardon-upd-auto");
+    return v ? v === "1" : !fromFdroid(appInfo().installer);
+  }
+  function updNote(text, cls) {
+    var n = $("upd-note");
+    if (n) {
+      n.textContent = text;
+      n.className = "setup-note" + (cls ? " " + cls : "");
+    }
+  }
+  /** manual: el usuario pulsó «Buscar ahora»; muestra el resultado aunque no haya novedad y aunque haya omitido esa versión. */
+  function checkUpdates(manual) {
+    var info = appInfo();
+    set("cardon-upd-last", String(Date.now()));
+    if (manual) updNote("Buscando…");
+    return http("GET", RELEASES, { Accept: "application/vnd.github+json", "User-Agent": "cardon-defi-app" }).then(function (r) {
+      var rel = r.data || {};
+      if (r.status !== 200 || !rel.tag_name) {
+        if (manual) updNote("No se pudo consultar GitHub" + (r.status ? " (HTTP " + r.status + ")" : "") + ". Revisa tu conexión.", "bad");
+        return null;
+      }
+      if (!isNewer(rel.tag_name, info.version)) {
+        if (manual) updNote("Tienes la última versión (" + info.version + ").", "ok");
+        return null;
+      }
+      if (manual) updNote("Hay una versión nueva: " + rel.tag_name.replace(/^v/i, "") + ".", "ok");
+      if (!manual && (get("cardon-upd-skip") === rel.tag_name || Number(get("cardon-upd-later")) > Date.now())) return null;
+      showUpdate(rel, info);
+      return rel;
+    });
+  }
+  function showUpdate(rel, info) {
+    var old = $("upd");
+    if (old) old.remove();
+    var tag = String(rel.tag_name),
+      fd = fromFdroid(info.installer),
+      apk = (rel.assets || []).filter(function (a) {
+        return /\.apk$/i.test(a.name || "") && /^https:\/\/github\.com\//.test(a.browser_download_url || "");
+      })[0],
+      page = /^https:\/\/github\.com\//.test(rel.html_url || "") ? rel.html_url : "https://github.com/" + (C.plantilla || "tradiabot/cardon-defi") + "/releases/latest";
+    var box = h(
+      '<div id="upd" class="upd" role="dialog" aria-modal="true" aria-labelledby="upd-title"><div class="upd-card"><div class="upd-head"><span class="pill">NUEVA VERSIÓN</span><button id="upd-x" class="icon-btn" aria-label="Cerrar">✕</button></div><h2 id="upd-title">Cardón DeFi <span id="upd-v"></span></h2><p class="muted">Tienes la <b id="upd-cur"></b>.</p><div id="upd-notes" class="upd-notes"></div><p id="upd-how" class="muted"></p><a id="upd-get" class="upd-btn primary"></a><div class="upd-row"><button id="upd-later">Más tarde</button><button id="upd-skip">Omitir esta versión</button></div></div></div>',
+    );
+    document.body.appendChild(box);
+    $("upd-v").textContent = tag.replace(/^v/i, "");
+    $("upd-cur").textContent = info.version || "versión actual";
+    var notes = String(rel.body || "")
+      .replace(/\r/g, "")
+      .replace(/^#+\s*/gm, "")
+      .replace(/\*\*|`/g, "")
+      .trim();
+    $("upd-notes").textContent = notes.length > 700 ? notes.slice(0, 700) + "…" : notes || "Sin notas.";
+    $("upd-notes").hidden = !notes;
+    if (fd) {
+      $("upd-how").textContent = "Instalaste la app desde F-Droid: actualízala desde allí. Puede tardar unos días en aparecer, porque F-Droid compila y firma cada versión.";
+      $("upd-get").textContent = "Abrir en F-Droid";
+      $("upd-get").href = FDROID_PAGE;
+    } else {
+      $("upd-how").textContent = "Se descarga en tu navegador; ábrela e instálala encima de la actual. Tus datos y tu agente se conservan.";
+      $("upd-get").textContent = apk ? "Descargar la APK" : "Ver el lanzamiento";
+      $("upd-get").href = apk ? apk.browser_download_url : page;
+    }
+    function close() {
+      box.remove();
+    }
+    $("upd-x").onclick = close;
+    $("upd-get").addEventListener("click", function () {
+      setTimeout(close, 300);
+    });
+    $("upd-later").onclick = function () {
+      set("cardon-upd-later", String(Date.now() + 24 * 3600 * 1000));
+      close();
+    };
+    $("upd-skip").onclick = function () {
+      set("cardon-upd-skip", tag);
+      close();
+    };
+  }
+  window.cardonCheckUpdates = function () {
+    return checkUpdates(true);
+  };
+  window.cardonAutoUpdates = function (on) {
+    set("cardon-upd-auto", on ? "1" : "0");
+  };
+  function autoCheck() {
+    if (!PUB || !autoUpdates() || !accepted()) return;
+    if (Date.now() - Number(get("cardon-upd-last") || 0) < UPD_EVERY) return;
+    checkUpdates(false);
+  }
+
   /* ---------- Paneles en Configuración ---------- */
   function mount() {
     var config = $("config");
@@ -701,7 +813,13 @@
         don("monero", "Monero (XMR)", "447gTj6Hg6gaAEAUmjqfhqDZr1PziUTvbT4LYLpmLVnTNVFK6cqeqPfh6P4neMKLWX5jDXAr94fWHacJwDvjmCzBBH8wPBt", "") +
         '</div><p class="muted" style="margin:10px 0 0">¡Gracias! 🙏</p><p class="muted firma" id="firma">Hecho xhumanx + IA</p></div>',
     );
+    var upd = h(
+      '<div class="panel config-form"><div class="panel-title">Actualizaciones</div><p class="muted">Versión instalada: <b id="upd-installed"></b>. La app consulta los lanzamientos públicos de GitHub y te avisa cuando hay una nueva; no descarga ni instala nada sin que lo pidas.</p><label class="check"><input id="upd-auto" type="checkbox" onchange="cardonAutoUpdates(this.checked)"> Buscar actualizaciones al abrir la app</label><button class="wide" onclick="cardonCheckUpdates()">Buscar actualizaciones ahora</button><p id="upd-note" class="setup-note"></p></div>',
+    );
     config.insertBefore(cloud, config.querySelector(".panel"));
+    config.insertBefore(upd, cloud.nextSibling);
+    $("upd-installed").textContent = appInfo().version || "—";
+    $("upd-auto").checked = autoUpdates();
     config.insertBefore(real, danger);
     config.insertBefore(donate, danger);
     $("key-account").value = get("cardon-cf-account");
@@ -737,6 +855,7 @@
     if (!PUB) return;
     if (!accepted()) open("aviso");
     else if (!get("cardon-api")) open("inicio");
+    setTimeout(autoCheck, 3000);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();

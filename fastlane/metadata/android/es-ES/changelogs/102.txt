@@ -1,0 +1,1 @@
+Aviso de actualizaciones dentro de la app (opcional, desde Config) y menos lecturas en la base de datos del agente para no agotar el plan gratuito de Cloudflare.

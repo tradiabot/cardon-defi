@@ -27,7 +27,14 @@ Builds:
     gradle:
       - publica
 
+  - versionName: 1.0.2-piloto
+    versionCode: 102
+    commit: v1.0.2-piloto
+    subdir: app/android/app
+    gradle:
+      - publica
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.1-piloto
-CurrentVersionCode: 101
+CurrentVersion: 1.0.2-piloto
+CurrentVersionCode: 102

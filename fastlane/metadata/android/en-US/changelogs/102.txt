@@ -1,0 +1,1 @@
+In-app update notice (optional, in Config) and fewer database reads so the agent stays within the Cloudflare free plan.
