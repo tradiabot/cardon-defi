@@ -20,13 +20,6 @@ RepoType: git
 Repo: https://github.com/tradiabot/cardon-defi.git
 
 Builds:
-  - versionName: 1.0.1-piloto
-    versionCode: 101
-    commit: v1.0.1-piloto
-    subdir: app/android/app
-    gradle:
-      - publica
-
   - versionName: 1.0.2-piloto
     versionCode: 102
     commit: v1.0.2-piloto
