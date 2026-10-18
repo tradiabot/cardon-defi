@@ -25,5 +25,5 @@ mode, limits, orders and logs. There is no central server run by the developer.
 * [x] The app complies with the inclusion criteria
 * [x] The original app author has been notified (I am the author)
 * [x] All related fdroiddata and RFP issues have been referenced in this merge request
-* [ ] Builds with `fdroid build` (built locally with `gradlew assemblePublicaRelease`; not yet run through `fdroid build`)
+* [x] Builds with `fdroid build` (CI pipeline 2960780928: all 9 jobs passed)
 ```
