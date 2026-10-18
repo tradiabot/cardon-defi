@@ -1,4 +1,3 @@
-# Ficha para https://gitlab.com/fdroid/fdroiddata (va en metadata/com.cardondefi.app.yml de ese repositorio). Validada con fdroid lint 2.4.5.
 AntiFeatures:
   NonFreeNet:
     en-US: The user's own agent is installed and runs on GitHub and Cloudflare accounts;
