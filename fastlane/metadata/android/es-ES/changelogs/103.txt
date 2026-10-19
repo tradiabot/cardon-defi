@@ -1,0 +1,1 @@
+Agente: vender todo ya no falla con «STF» (los importes se redondean hacia abajo y nunca superan el saldo real) y se pueden activar todos los mercados, no solo 4. Aplica a los agentes que se instalen desde ahora.

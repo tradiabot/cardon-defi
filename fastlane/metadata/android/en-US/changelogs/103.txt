@@ -1,0 +1,1 @@
+Agent: selling everything no longer fails with "STF" (amounts are rounded down and never exceed the real balance), and every market can be enabled, not just 4. Applies to agents installed from now on.

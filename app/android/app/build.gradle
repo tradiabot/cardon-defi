@@ -19,8 +19,8 @@ android {
         publica {
             dimension 'edicion'
             applicationId 'com.cardondefi.app'
-            versionCode 102
-            versionName '1.0.2-piloto'
+            versionCode 103
+            versionName '1.0.3-piloto'
         }
         personal { dimension 'edicion' }
     }
