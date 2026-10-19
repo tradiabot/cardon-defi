@@ -1,0 +1,1 @@
+Nuevo: bloqueo de la app con huella o con el PIN, patrón o contraseña del teléfono. Se activa solo en cuanto un mercado opera con dinero real y no se puede apagar mientras siga así; también puedes activarlo siempre desde Configuración. Pide desbloquear al abrir la app y al volver tras 1 minuto, y mientras está activo la app no sale en capturas ni en la vista de apps recientes.

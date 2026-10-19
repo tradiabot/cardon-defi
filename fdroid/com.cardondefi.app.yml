@@ -19,14 +19,14 @@ RepoType: git
 Repo: https://github.com/tradiabot/cardon-defi.git
 
 Builds:
-  - versionName: 1.0.4-piloto
-    versionCode: 104
-    commit: v1.0.4-piloto
+  - versionName: 1.0.5-piloto
+    versionCode: 105
+    commit: v1.0.5-piloto
     subdir: app/android/app
     gradle:
       - publica
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.4-piloto
-CurrentVersionCode: 104
+CurrentVersion: 1.0.5-piloto
+CurrentVersionCode: 105

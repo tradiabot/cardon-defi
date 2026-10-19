@@ -961,6 +961,46 @@
     checkUpdates(false);
   }
 
+  /* ---------- Bloqueo de la app (nativo) ---------- */
+  // Obligatorio mientras haya mercados con dinero real; opcional si todo está en simulación.
+  function lockInfo() {
+    return NATIVE && NATIVE.lockInfo ? parse(NATIVE.lockInfo()) : null;
+  }
+  function renderLock(info) {
+    var st = $("lock-state");
+    if (!st || !info) return;
+    var manual = $("lock-manual");
+    manual.checked = !!(info.manual || info.live);
+    manual.disabled = !!info.live || !info.available;
+    if (!info.available) {
+      st.textContent = "NO DISPONIBLE";
+      st.className = "pill bad";
+      return note("lock-note", "Tu teléfono no tiene bloqueo de pantalla. Configura huella, PIN o patrón en los ajustes de Android para poder bloquear la app.", "bad");
+    }
+    st.textContent = info.required ? "ACTIVO" : "APAGADO";
+    st.className = info.required ? "pill" : "pill warn";
+    note(
+      "lock-note",
+      info.live
+        ? "Tienes mercados con dinero real: el bloqueo es obligatorio. Para apagarlo, pasa todos los mercados a simulación."
+        : info.required
+          ? "Activo aunque todo está en simulación."
+          : "Se activará solo cuando pases un mercado a dinero real.",
+      info.required ? "ok" : "",
+    );
+  }
+  window.cardonLiveMoney = function (live) {
+    if (!NATIVE || !NATIVE.setLiveMoney) return;
+    NATIVE.setLiveMoney(!!live);
+    renderLock(lockInfo());
+  };
+  window.cardonLockManual = function (on) {
+    var info = lockInfo();
+    if (!info) return;
+    if (!on && info.live) return renderLock(info);
+    renderLock(parse(NATIVE.setLockManual(!!on)));
+  };
+
   /* ---------- Paneles en Configuración ---------- */
   function mount() {
     var config = $("config");
@@ -991,6 +1031,14 @@
     );
     config.insertBefore(themes, config.querySelector(".panel"));
     applyTheme(get("cardon-theme") || "noche");
+    var info = lockInfo();
+    if (info) {
+      var lock = h(
+        '<div class="panel config-form"><div class="panel-title">Bloqueo de la app <span id="lock-state" class="pill warn">APAGADO</span></div><p class="muted">Pide tu huella o el PIN, patrón o contraseña del teléfono al abrir la app y al volver a ella después de 1 minuto. Mientras esté activo, la app no aparece en las capturas ni en la vista de apps recientes.</p><label class="check"><input id="lock-manual" type="checkbox" onchange="cardonLockManual(this.checked)"> Bloquear siempre, aunque todo esté en simulación</label><p id="lock-note" class="setup-note"></p></div>',
+      );
+      config.insertBefore(lock, themes.nextSibling);
+      renderLock(info);
+    }
     if (!PUB) return;
     var real = h(
       '<div class="panel config-form"><div class="panel-title">Dinero real: clave de firma <span class="pill warn">OPCIONAL</span></div><p class="muted">Tu agente empieza en simulación. Para operar con dinero real necesita la clave de firma de tu wallet. Se envía de este teléfono a <b>tu</b> Cloudflare, protegida con tu huella; no pasa por GitHub ni por el desarrollador.</p><label>Account ID de Cloudflare<input id="key-account" autocomplete="off" autocapitalize="off" spellcheck="false"></label><label>Token de Cloudflare<input id="key-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"></label><button class="wide" onclick="cardonUploadKey()">Guardar la clave en mi nube</button><p id="key-note" class="setup-note"></p></div>',

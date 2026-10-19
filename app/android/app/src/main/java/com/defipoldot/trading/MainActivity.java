@@ -69,6 +69,13 @@ public class MainActivity extends Activity {
     private static final String HUB_USDC = "0x0000053900000000000000000000000001200000";
     private static final String HUB_USDT = "0x000007C000000000000000000000000001200000";
     private static final BigInteger MIN_POL_GAS_RESERVE_WEI = new BigInteger("200000000000000000");
+    // Bloqueo de la app: obligatorio con dinero real activo, opcional si no. Pide huella o el PIN/patrón del teléfono.
+    private static final String LOCK_PREFS = "app_lock";
+    private static final long LOCK_AFTER_MS = 60_000;
+    private static final int UNLOCK_REQUEST = 4310;
+    private android.view.View lockView;
+    private boolean locked, pendingPrompt, prompting;
+    private long hiddenAt;
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,8 +117,119 @@ public class MainActivity extends Activity {
                 return dialog(message, defaultValue == null ? "" : defaultValue, result, result, true);
             }
         });
-        setContentView(web, new ViewGroup.LayoutParams(-1, -1));
+        android.widget.FrameLayout root = new android.widget.FrameLayout(this);
+        root.addView(web, new ViewGroup.LayoutParams(-1, -1));
+        lockView = buildLockView();
+        root.addView(lockView, new ViewGroup.LayoutParams(-1, -1));
+        setContentView(root, new ViewGroup.LayoutParams(-1, -1));
+        applySecure();
+        if (lockRequired() && deviceSecure()) lock(); else lockView.setVisibility(android.view.View.GONE);
         web.loadUrl("file:///android_asset/web/index.html");
+    }
+
+    @Override protected void onStart() {
+        super.onStart();
+        if (hiddenAt > 0 && android.os.SystemClock.elapsedRealtime() - hiddenAt > LOCK_AFTER_MS && lockRequired() && deviceSecure()) lock();
+        hiddenAt = 0;
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (locked && pendingPrompt && !prompting) { pendingPrompt = false; getWindow().getDecorView().post(this::promptUnlock); }
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
+        // La pantalla de PIN del sistema también detiene la app: eso no cuenta como salir.
+        if (!prompting) hiddenAt = android.os.SystemClock.elapsedRealtime();
+    }
+
+    @Override public void onBackPressed() {
+        if (locked) moveTaskToBack(true); else super.onBackPressed();
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != UNLOCK_REQUEST) return;
+        prompting = false;
+        if (resultCode == RESULT_OK) unlock();
+    }
+
+    SharedPreferences lockPrefs() { return getSharedPreferences(LOCK_PREFS, MODE_PRIVATE); }
+    boolean lockRequired() { SharedPreferences p = lockPrefs(); return p.getBoolean("live", false) || p.getBoolean("manual", false); }
+    boolean deviceSecure() {
+        android.app.KeyguardManager km = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        return km != null && km.isDeviceSecure();
+    }
+    boolean isLocked() { return locked; }
+
+    /** Sin capturas ni vista previa en «recientes» mientras el bloqueo esté activo. */
+    void applySecure() {
+        if (lockRequired()) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+        else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+    }
+
+    private android.view.View buildLockView() {
+        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setGravity(android.view.Gravity.CENTER);
+        box.setBackgroundColor(Color.rgb(10, 15, 13));
+        int pad = (int) (32 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad, pad, pad);
+        box.setClickable(true);
+        TextView title = new TextView(this);
+        title.setText("🔒 " + getApplicationInfo().loadLabel(getPackageManager()) + " está bloqueada");
+        title.setTextColor(Color.rgb(232, 240, 236));
+        title.setTextSize(20);
+        title.setGravity(android.view.Gravity.CENTER);
+        TextView text = new TextView(this);
+        text.setText("Desbloquéala con tu huella o con el PIN, patrón o contraseña del teléfono.");
+        text.setTextColor(Color.rgb(150, 166, 158));
+        text.setTextSize(15);
+        text.setGravity(android.view.Gravity.CENTER);
+        text.setPadding(0, pad / 2, 0, pad);
+        android.widget.Button button = new android.widget.Button(this);
+        button.setText("Desbloquear");
+        button.setOnClickListener(v -> promptUnlock());
+        box.addView(title);
+        box.addView(text);
+        box.addView(button);
+        return box;
+    }
+
+    private void lock() {
+        locked = true;
+        pendingPrompt = true;
+        lockView.setVisibility(android.view.View.VISIBLE);
+        if (hasWindowFocus() && !prompting) { pendingPrompt = false; promptUnlock(); }
+    }
+
+    private void unlock() {
+        locked = false;
+        pendingPrompt = false;
+        lockView.setVisibility(android.view.View.GONE);
+    }
+
+    private void promptUnlock() {
+        if (prompting) return;
+        if (!deviceSecure()) { unlock(); return; }
+        CharSequence name = getApplicationInfo().loadLabel(getPackageManager());
+        prompting = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            BiometricPrompt.Builder builder = new BiometricPrompt.Builder(this).setTitle("Desbloquear " + name).setSubtitle("Huella, rostro o PIN del teléfono");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) builder.setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_WEAK | android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+            else builder.setDeviceCredentialAllowed(true);
+            builder.build().authenticate(new CancellationSignal(), getMainExecutor(), new BiometricPrompt.AuthenticationCallback() {
+                @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) { prompting = false; unlock(); }
+                @Override public void onAuthenticationError(int code, CharSequence message) { prompting = false; }
+            });
+            return;
+        }
+        // Android 6 a 9: pantalla de PIN/patrón del sistema (muchos teléfonos aceptan ahí la huella).
+        android.app.KeyguardManager km = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        Intent intent = km.createConfirmDeviceCredentialIntent("Desbloquear " + name, "Usa el PIN, patrón o contraseña del teléfono");
+        if (intent == null) { prompting = false; unlock(); return; }
+        startActivityForResult(intent, UNLOCK_REQUEST);
     }
 
     /** Diálogo nativo para alert/confirm/prompt de la interfaz. `input` no nulo = pide un texto. */
@@ -187,6 +305,30 @@ public class MainActivity extends Activity {
             } catch (Exception error) {
                 return error(error.getClass().getSimpleName());
             }
+        }
+
+        /** Estado del bloqueo para Configuración. */
+        @JavascriptInterface public String lockInfo() {
+            try {
+                MainActivity a = (MainActivity) activity;
+                SharedPreferences p = a.lockPrefs();
+                return new JSONObject().put("live", p.getBoolean("live", false)).put("manual", p.getBoolean("manual", false))
+                    .put("required", a.lockRequired()).put("available", a.deviceSecure()).put("locked", a.isLocked()).toString();
+            } catch (Exception error) { return error(error); }
+        }
+
+        /** La interfaz avisa si hay mercados con dinero real (solo tras leerlos bien del agente). */
+        @JavascriptInterface public void setLiveMoney(boolean live) {
+            MainActivity a = (MainActivity) activity;
+            a.lockPrefs().edit().putBoolean("live", live).apply();
+            a.runOnUiThread(a::applySecure);
+        }
+
+        @JavascriptInterface public String setLockManual(boolean on) {
+            MainActivity a = (MainActivity) activity;
+            a.lockPrefs().edit().putBoolean("manual", on).apply();
+            a.runOnUiThread(a::applySecure);
+            return lockInfo();
         }
 
         @JavascriptInterface public String authorizeTrading(String message) {

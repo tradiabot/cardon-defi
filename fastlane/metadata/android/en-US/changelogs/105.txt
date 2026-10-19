@@ -1,0 +1,1 @@
+New: app lock with fingerprint or the phone's PIN, pattern or password. It turns on by itself as soon as a market trades with real money and cannot be turned off while that lasts; you can also keep it always on from Settings. It asks to unlock when opening the app and when returning after 1 minute, and while active the app is hidden from screenshots and the recent apps view.

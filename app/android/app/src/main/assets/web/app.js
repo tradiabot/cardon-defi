@@ -1627,6 +1627,7 @@ async function loadMarkets() {
   const r = await api("/markets");
   if (!r?.markets) return;
   cache.markets = r.markets.filter((m) => okId(m.id));
+  if (window.cardonLiveMoney) window.cardonLiveMoney(cache.markets.some((m) => m.enabled && m.mode === "live"));
   const cur = cache.markets.find((m) => m.id === MARKET);
   if (!cur || !cur.enabled) {
     if (MARKET !== "POL") {
