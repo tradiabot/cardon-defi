@@ -24,6 +24,14 @@ describe('límites editables', () => {
     expect(JSON.parse(kv.get('limits')!)).toEqual({ maxTradeUsdc: 50 });
   });
 
+  it('con MODE = live y LIMITS_EDITABLE = true también se guardan', async () => {
+    const { env: e } = env('live');
+    (e as unknown as Record<string, string>).LIMITS_EDITABLE = 'true';
+    expect(await saveLimits(e, { maxTradeUsdc: 5 })).toEqual({ limits: { maxTradeUsdc: 5 } });
+    expect(await storedLimits(e)).toEqual({ maxTradeUsdc: 5 });
+    expect(await saveLimits(e, { maxTradeUsdc: 501 })).toHaveProperty('error');
+  });
+
   it('con MODE = app guarda dentro de rango y rechaza fuera de rango', async () => {
     const { env: e } = env('app');
     expect(await saveLimits(e, { maxTradeUsdc: 25, maxTradesPerDay: 4 })).toEqual({ limits: { maxTradeUsdc: 25, maxTradesPerDay: 4 } });

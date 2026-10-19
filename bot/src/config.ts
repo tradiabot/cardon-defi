@@ -10,6 +10,7 @@ export interface Env {
   WALLET_PRIVATE_KEY?: string;
   NTFY_TOPIC?: string;
   MODE: string;
+  LIMITS_EDITABLE?: string;
   GAS_RESERVE_POL: string;
   SLIPPAGE_BPS: string;
   WALLET_ADDRESS: string;

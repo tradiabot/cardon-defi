@@ -2,8 +2,8 @@ import type { Env, Settings } from './config';
 import { getKv, putKv } from './db';
 
 /**
- * Límites que el usuario puede ajustar desde la app cuando MODE = "app" (cada quien en su nube).
- * Con MODE fijo en wrangler.toml siguen mandando las variables de ese archivo.
+ * Límites que el usuario puede ajustar desde la app cuando MODE = "app" (cada quien en su nube)
+ * o cuando LIMITS_EDITABLE = "true". Si no, siguen mandando las variables de wrangler.toml.
  */
 export const LIMIT_RANGES = {
   maxTradeUsdc: [1, 500],
@@ -16,7 +16,7 @@ export const LIMIT_RANGES = {
 export type LimitKey = keyof typeof LIMIT_RANGES;
 export type Limits = Partial<Record<LimitKey, number>>;
 
-export const limitsEditable = (env: Env) => env.MODE === 'app';
+export const limitsEditable = (env: Env) => env.MODE === 'app' || env.LIMITS_EDITABLE === 'true';
 
 function clean(raw: Record<string, unknown>): Limits {
   const out: Limits = {};

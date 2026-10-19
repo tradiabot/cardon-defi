@@ -307,7 +307,7 @@ function config(s: Settings, env: Env) {
     mode: 'auto', minConfidence: s.minConfidence, minReserveUsdc: s.minReserveUsdc, minNetProfitUsdc: s.minProfitPct,
     targetUsdc: 50, targetPol: 50, targetDot: 0, maxTradeUsdc: s.maxTradeUsdc, maxTradesPerDay: s.maxTradesPerDay,
     editable, ranges: editable ? LIMIT_RANGES : undefined,
-    note: editable ? 'Tus límites se aplican en tu nube desde el siguiente ciclo' : 'Los límites del bot se cambian en wrangler.toml de DEX Pilot',
+    note: editable ? 'Tus límites se aplican en tu nube desde el siguiente ciclo' : 'Los límites del bot se cambian en wrangler.toml',
   };
 }
 
