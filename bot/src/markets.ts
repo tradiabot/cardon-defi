@@ -46,7 +46,9 @@ export const MARKETS: Record<string, Market> = {
 };
 
 export const DEFAULT_MARKET = 'POL';
-export const MAX_ENABLED = 4;
+// Todos los mercados caben en el plan gratuito (medido el 18-oct con 4 activos: 676k lecturas y 18k escrituras de D1
+// al día, 2,5k peticiones al Worker); con los 7 se estima ~1,2M lecturas y ~31k escrituras. El scheduler escalona los subciclos.
+export const MAX_ENABLED = Object.keys(MARKETS).length;
 
 export const market = (id: string | null | undefined): Market | null => MARKETS[String(id ?? DEFAULT_MARKET).toUpperCase()] ?? null;
 

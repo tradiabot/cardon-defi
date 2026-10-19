@@ -5,6 +5,15 @@ import { DEFAULT_MARKET, enabledMarkets, kvKey, type Market } from './markets';
 
 const SUB_CYCLE_TIMEOUT_MS = 120_000;
 export const TICK_MS = 5 * 60_000;
+export const SUB_CYCLE_CONCURRENCY = 4;
+
+/** Ejecuta `run` sobre cada elemento con como mucho `width` a la vez. */
+export async function pool<T>(items: T[], width: number, run: (x: T) => Promise<void>): Promise<void> {
+  let next = 0;
+  const worker = async () => { while (next < items.length) await run(items[next++]); };
+  await Promise.all(Array.from({ length: Math.min(Math.max(1, width), items.length) }, worker));
+}
+
 /** Unos segundos después del múltiplo de 5 min, como hacía el cron. */
 const TICK_OFFSET_MS = 20_000;
 /** Un mercado no repite ciclo antes de este tiempo: el reloj y el cron pueden coincidir o llegar duplicados. */
@@ -49,7 +58,9 @@ export async function runAll(env: Env, now = Date.now(), source = 'manual'): Pro
     const lead = markets.find(m => m.id === DEFAULT_MARKET) ?? markets[0];
     const trackDot = !enabled.some(m => m.id === 'DOT');
     const log = (m: Market, r: Awaited<ReturnType<typeof runCycle>> | { error: string }) => console.log('ciclo', m.id, JSON.stringify('skipped' in r || 'error' in r ? r : { ok: r.ok, errors: r.errors, final: r.decision?.final }));
-    await Promise.all(markets.map(async m => {
+    // Un Worker gratuito tiene 6 conexiones abiertas a la vez: con muchos mercados, los subciclos por SELF las ocupaban
+    // y el ciclo principal esperaba. El principal corre aquí y los demás van de SUB_CYCLE_CONCURRENCY en SUB_CYCLE_CONCURRENCY.
+    const one = async (m: Market) => {
       const t = Date.now();
       try {
         if (m.id === lead.id || !env.SELF || !env.ADMIN_TOKEN) {
@@ -65,7 +76,8 @@ export async function runAll(env: Env, now = Date.now(), source = 'manual'): Pro
         log(m, { error: (error as Error).message });
         timings[m.id] = { ms: Date.now() - t, error: (error as Error).message.slice(0, 120) };
       }
-    }));
+    };
+    await Promise.all([one(lead), pool(markets.filter(m => m.id !== lead.id), SUB_CYCLE_CONCURRENCY, one)]);
   }
   // Registro del último reparto, para diagnosticar ciclos lentos o saltados.
   await putKv(env.DB, source === 'cron' ? 'cron_log' : 'tick_log', { at: new Date(now).toISOString(), source, totalMs: Date.now() - started, timings }, now).run();
