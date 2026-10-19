@@ -13,7 +13,7 @@ https://github.com/tradiabot/cardon-defi) and then controls it: markets, paper/l
 mode, limits, orders and logs. There is no central server run by the developer.
 
 * Source: https://github.com/tradiabot/cardon-defi (MIT)
-* Built from `app/android/app`, flavor `publica`, tag `v1.0.5-piloto`
+* Built from `app/android/app`, flavor `publica`, tag `v1.0.6-piloto`
 * Only dependency: org.web3j:crypto (Apache-2.0). No Google services, no trackers, no ads.
 * Anti-feature NonFreeNet: the agent runs on GitHub Actions and Cloudflare Workers
   accounts owned by the user; AI providers are optional.

@@ -1,3 +1,4 @@
+import { aiExplain, applyFix, diagnose, doctorLog, FIXES, record, type FixId } from './doctor';
 import { type Env, type Settings } from './config';
 import { type Control, type CycleStatus } from './engine';
 import { loadMarket, type MarketCtx } from './context';
@@ -323,7 +324,7 @@ const ADMIN = new Set(['/orders', '/markets', '/control/activate', '/control/pau
 export async function handleV1(request: Request, env: Env, path: string, url: URL): Promise<Response> {
   const method = request.method;
   // Todo POST de IA o contexto gasta cupo de IA o cambia claves: solo con token de administrador.
-  const needsAdmin = method === 'POST' && (ADMIN.has(path) || path.startsWith('/control/') || path.startsWith('/orders/') || path.startsWith('/ai/') || path.startsWith('/macro/'));
+  const needsAdmin = method === 'POST' && (ADMIN.has(path) || path.startsWith('/control/') || path.startsWith('/orders/') || path.startsWith('/ai/') || path.startsWith('/macro/') || path.startsWith('/doctor/'));
   if (needsAdmin) {
     if (!(await isAdmin(request, env))) return fail('Sesión no válida: inicia sesión en la pestaña Config', 401);
   }
@@ -475,6 +476,23 @@ export async function handleV1(request: Request, env: Env, path: string, url: UR
       const m = await fetchMacro(ai.keys, ai.models, (await getKv<Record<string, number>>(env.DB, 'ai_cooldown')) ?? {});
       await putKv(env.DB, 'macro', m, m.ts).run();
       return reply({ macro: { ...m, updatedAt: new Date(m.ts).toISOString(), ageMinutes: 0 } });
+    }
+    case 'GET /doctor': {
+      const [findings, log] = await Promise.all([diagnose(env), doctorLog(env)]);
+      return reply({ checkedAt: new Date().toISOString(), findings, fixes: FIXES, log });
+    }
+    case 'POST /doctor/fix': {
+      const fix = String(body.fix ?? '') as FixId;
+      if (!(fix in FIXES)) return fail(`Arreglo desconocido: ${fix}`);
+      const target = typeof body.market === 'string' ? body.market : null;
+      const now = Date.now();
+      const r = await applyFix(env, fix, target, now);
+      await record(env, [{ ts: now, auto: false, fix, market: target, ...r }], now);
+      return reply(r);
+    }
+    case 'POST /doctor/ai': {
+      const r = await aiExplain(env, await diagnose(env));
+      return 'error' in r ? fail(r.error, 409) : reply(r);
     }
     case 'POST /emergency-stop': {
       const control = await setControl(env, true, 'EMERGENCY STOP desde la app Android');

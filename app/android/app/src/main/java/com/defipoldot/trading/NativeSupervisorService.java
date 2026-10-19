@@ -33,6 +33,10 @@ public class NativeSupervisorService extends Service {
     private String base() { return getSharedPreferences(CLOUD_PREFS, MODE_PRIVATE).getString("base", ""); }
     private static final String CHANNEL_ID = "defi_supervisor";
     private static final String TRADES_CHANNEL_ID = "dexpilot_trades";
+    private static final String ISSUES_CHANNEL_ID = "dexpilot_issues";
+    private static final int ISSUES_NOTIFICATION_ID = 1043;
+    /** Un problema avisa solo si sigue ahí después de un ciclo completo (5 min) más margen: los fallos de red sueltos se arreglan solos. */
+    private static final long ISSUE_PERSIST_MS = 6 * 60_000L;
     private static final int NOTIFICATION_ID = 1042;
     private static final int TRADE_NOTIFICATION_BASE = 20000;
     private static final int SEEN_LIMIT = 200;
@@ -95,6 +99,7 @@ public class NativeSupervisorService extends Service {
             Response r = get("/api/health");
             JSONObject health = new JSONObject(r.body);
             online = r.code == 200 && health.optBoolean("ok");
+            checkIssues(health.optJSONArray("issues"));
             JSONArray problems = health.optJSONArray("problems");
             detail = online
                 ? "Bot activo en Cloudflare · modo " + health.optString("mode", "?").toUpperCase(Locale.ROOT)
@@ -109,6 +114,57 @@ public class NativeSupervisorService extends Service {
             .putLong("checked_at", System.currentTimeMillis())
             .apply();
         manager().notify(NOTIFICATION_ID, statusNotification(detail));
+    }
+
+    /**
+     * Avisa (una vez) de cada problema del «médico» del bot que dure más de un ciclo. Cuando desaparece,
+     * se olvida, y si vuelve a pasar se avisa otra vez.
+     */
+    private void checkIssues(JSONArray issues) {
+        if (issues == null) return;
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+            JSONObject seen = new JSONObject(prefs.getString("issues_seen", "{}"));
+            JSONObject next = new JSONObject();
+            long now = System.currentTimeMillis();
+            List<String> fresh = new ArrayList<>();
+            boolean red = false;
+            for (int i = 0; i < issues.length(); i++) {
+                JSONObject x = issues.getJSONObject(i);
+                String key = x.optString("market", "") + ":" + x.optString("code");
+                JSONObject old = seen.optJSONObject(key);
+                long first = old != null ? old.optLong("first", now) : now;
+                boolean notified = old != null && old.optBoolean("notified");
+                if (!notified && now - first >= ISSUE_PERSIST_MS) {
+                    String market = x.isNull("market") ? "" : x.optString("market") + ": ";
+                    fresh.add(market + x.optString("detail"));
+                    red |= "rojo".equals(x.optString("level"));
+                    notified = true;
+                }
+                next.put(key, new JSONObject().put("first", first).put("notified", notified));
+            }
+            prefs.edit().putString("issues_seen", next.toString()).apply();
+            if (!fresh.isEmpty()) notifyIssues(fresh, red);
+        } catch (Exception ignored) {
+            // Respuesta rara del bot: se reintenta en el siguiente minuto.
+        }
+    }
+
+    private void notifyIssues(List<String> lines, boolean red) {
+        String title = (red ? "Tu bot tiene errores" : "Tu bot necesita revisión") + " (" + lines.size() + ")";
+        String text = android.text.TextUtils.join("\n", lines) + "\nAbre Config → Estado en tiempo real → Buscar y corregir.";
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            ? new Notification.Builder(this, ISSUES_CHANNEL_ID)
+            : new Notification.Builder(this).setPriority(Notification.PRIORITY_HIGH).setDefaults(Notification.DEFAULT_ALL);
+        manager().notify(ISSUES_NOTIFICATION_ID, builder
+            .setContentTitle(title)
+            .setContentText(lines.get(0))
+            .setStyle(new Notification.BigTextStyle().bigText(text))
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentIntent(openApp())
+            .setAutoCancel(true)
+            .setShowWhen(true)
+            .build());
     }
 
     private void checkTrades() {
@@ -147,9 +203,10 @@ public class NativeSupervisorService extends Service {
             case "FALLIDA": state = "FALLIDA"; break;
             default: state = "sin confirmar · revisa la app"; break;
         }
+        String symbol = t.optString("symbol", "POL");
         String amounts = buy
-            ? String.format(Locale.ROOT, "%.2f USDC → %.4f POL", in, out)
-            : String.format(Locale.ROOT, "%.4f POL → %.2f USDC", in, out);
+            ? String.format(Locale.ROOT, "%.2f USDC → %.4f %s", in, out, symbol)
+            : String.format(Locale.ROOT, "%.4f %s → %.2f USDC", in, symbol, out);
         StringBuilder text = new StringBuilder(amounts).append(String.format(Locale.ROOT, " · precio %.5f", price));
         if (!buy && "CONFIRMADA".equals(status) && !t.isNull("realized_pnl_usd")) {
             text.append(String.format(Locale.ROOT, " · P/L %+.3f USD", t.optDouble("realized_pnl_usd")));
@@ -190,8 +247,11 @@ public class NativeSupervisorService extends Service {
             NotificationChannel trades = new NotificationChannel(TRADES_CHANNEL_ID, "Compras y ventas", NotificationManager.IMPORTANCE_HIGH);
             trades.setDescription("Aviso cada vez que el bot compra o vende");
             trades.enableVibration(true);
+            NotificationChannel issues = new NotificationChannel(ISSUES_CHANNEL_ID, "Errores del bot", NotificationManager.IMPORTANCE_HIGH);
+            issues.setDescription("Aviso cuando un mercado sigue con errores o necesita revisión");
             manager().createNotificationChannel(status);
             manager().createNotificationChannel(trades);
+            manager().createNotificationChannel(issues);
         }
     }
 

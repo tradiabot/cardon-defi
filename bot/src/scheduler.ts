@@ -1,3 +1,4 @@
+import { autoDoctor } from './doctor';
 import type { Env } from './config';
 import { putKv } from './db';
 import { runCycle } from './engine';
@@ -81,4 +82,9 @@ export async function runAll(env: Env, now = Date.now(), source = 'manual'): Pro
   }
   // Registro del último reparto, para diagnosticar ciclos lentos o saltados.
   await putKv(env.DB, source === 'cron' ? 'cron_log' : 'tick_log', { at: new Date(now).toISOString(), source, totalMs: Date.now() - started, timings }, now).run();
+  try {
+    await autoDoctor(env, now);
+  } catch (error) {
+    console.log('médico', (error as Error).message);
+  }
 }

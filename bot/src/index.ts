@@ -1,3 +1,4 @@
+import { healthIssues } from './doctor';
 import { settings, type Env } from './config';
 import { runCycle, type Control, type Health } from './engine';
 import { loadMarket } from './context';
@@ -72,7 +73,9 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
         control?.paused ? `pausado: ${control.reason || 'manual'}` : null,
         (health?.failStreak ?? 0) >= 3 ? `${health!.failStreak} ciclos seguidos con errores` : null,
       ].filter(Boolean);
-      return json({ ok: problems.length === 0, problems, lastOkMinutesAgo: ageMin, failStreak: health?.failStreak ?? 0, mode: settings(env).mode }, problems.length ? 503 : 200);
+      // issues: hallazgos por mercado del «médico»; la app avisa con una notificación si un rojo dura más de un ciclo.
+      const issues = await healthIssues(env).catch(() => []);
+      return json({ ok: problems.length === 0, problems, issues, lastOkMinutesAgo: ageMin, failStreak: health?.failStreak ?? 0, mode: settings(env).mode }, problems.length ? 503 : 200);
     }
     case 'GET /api/orders':
       return json({ orders: await listOrders(env, limitParam(url, 40, 200)) });
