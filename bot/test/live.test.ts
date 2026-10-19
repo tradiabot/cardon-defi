@@ -44,6 +44,9 @@ describe('toUnits', () => {
     expect(toUnits(17.5680725504993, 18)).toBe('17568072550000000000');
     expect(() => toUnits(-1, 6)).toThrow();
     expect(toUnits(0.1, 18)).toBe('100000000000000000');
+    // Saldo real de AAVE del 19-oct: redondear a 9 decimales hacia arriba pedía 12430979000000000 (> saldo) y revertía con STF.
+    expect(BigInt(toUnits(0.012430978826238417, 18)) <= 12430978826238415n).toBe(true);
+    expect(toUnits(4.2967859, 6)).toBe('4296785');
   });
 });
 

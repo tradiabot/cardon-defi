@@ -135,7 +135,15 @@ export async function uniSubmit(m: Market, s: Settings, privateKey: string | und
     const { pub, wallet, account } = clients(s, privateKey);
     if (!wallet || !account) throw new Error('sin cuenta de firma');
     stage = 'build';
-    const tx = uniSwapTx(m, side, q, s.wallet, s.slippageBps, Math.floor(Date.now() / 1000));
+    let tx = uniSwapTx(m, side, q, s.wallet, s.slippageBps, Math.floor(Date.now() / 1000));
+    if (tx.approve) {
+      // Vender o gastar todo el saldo: el importe viene de un número decimal y puede pasar del saldo real por unos wei.
+      const balance = await pub.readContract({ address: tx.approve.token, abi: erc20Abi, functionName: 'balanceOf', args: [account.address] });
+      if (balance < tx.approve.amount) {
+        if (balance * 1000n < tx.approve.amount * 999n) throw new Error(`saldo insuficiente: hay ${balance} y el swap pide ${tx.approve.amount}`);
+        tx = uniSwapTx(m, side, { ...q, srcAmountRaw: balance.toString() }, s.wallet, s.slippageBps, Math.floor(Date.now() / 1000));
+      }
+    }
     let nonce = await pub.getTransactionCount({ address: account.address, blockTag: 'pending' });
     let needsApprove = false;
     if (tx.approve) {

@@ -40,8 +40,9 @@ async function parseJson<T>(res: Response): Promise<T> {
 
 export function toUnits(amount: number, decimals: number): string {
   if (!Number.isFinite(amount) || amount < 0) throw new Error(`cantidad inválida: ${amount}`);
-  const [int, frac = ''] = amount.toFixed(Math.min(decimals, 9)).split('.');
-  return (BigInt(int) * 10n ** BigInt(decimals) + BigInt(frac.padEnd(decimals, '0') || '0')).toString();
+  // Siempre hacia abajo: redondear hacia arriba pedía más token del que hay en la wallet y el swap revertía (STF).
+  const digits = Math.min(decimals, 9);
+  return (BigInt(Math.floor(amount * 10 ** digits)) * 10n ** BigInt(decimals - digits)).toString();
 }
 
 export async function quote(side: Side, amountIn: number, wallet: string, m: Market = MARKETS.POL): Promise<DexQuote> {
