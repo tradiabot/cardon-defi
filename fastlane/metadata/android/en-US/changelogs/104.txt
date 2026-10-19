@@ -1,0 +1,1 @@
+New: "Update my agent" in Settings. With a GitHub token, the app copies the published agent improvements (for example the "STF" fix and enabling every market) to your repository and redeploys it to your Cloudflare. It lists the files before changing anything; your wallet, keys, history and each market's mode stay the same.

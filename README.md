@@ -38,6 +38,10 @@ Al terminar, la app crea el repositorio privado `cardon-nube` en tu GitHub (copi
 | Tokens de GitHub y Cloudflare | Secretos de tu repositorio privado; la app no los conserva | Nadie |
 | Clave de firma (solo si activas dinero real) | Secreto de tu Worker en tu Cloudflare; va directo del teléfono, tras tu huella, sin pasar por GitHub | Nadie |
 
+### Actualizar tu agente
+
+Las mejoras del agente se publican en esta plantilla. Tu copia `cardon-nube` no las recibe sola: en la app, **Configuración → Mi agente → Actualizar mi agente**, pega un token de GitHub (`repo` + `workflow`) y la app te muestra qué archivos de `bot/` y `.github/workflows/` cambian. Si confirmas, los copia a tu repositorio en un solo commit y relanza `instalar.yml`. Tus secretos, tu base de datos y el modo de cada mercado no cambian, y el token no se guarda.
+
 ## Instalar a mano (sin la app)
 
 ```bash
@@ -93,6 +97,6 @@ Cardón DeFi es gratis. Si te sirve, en la app (Configuración → Apoya al desa
 
 Cardón DeFi is a decentralized trading agent, in pilot stage, that trades on DEXs with **your own wallet from your own cloud**. There is no central server and nobody else holds your funds or keys.
 
-Install the Android APK from the [latest release](https://github.com/tradiabot/cardon-defi/releases/latest) and follow the wizard (the app is in Spanish for now). You need a free GitHub account with a token (`repo` + `workflow` scopes), a free Cloudflare account with your Account ID and an *Edit Cloudflare Workers* token plus *Account · D1 · Edit*, and optionally a free Groq key. The app creates a private copy of this template in your GitHub and deploys the agent to your Cloudflare. Everything starts in simulation.
+Install the Android APK from the [latest release](https://github.com/tradiabot/cardon-defi/releases/latest) and follow the wizard (the app is in Spanish for now). You need a free GitHub account with a token (`repo` + `workflow` scopes), a free Cloudflare account with your Account ID and an *Edit Cloudflare Workers* token plus *Account · D1 · Edit*, and optionally a free Groq key. The app creates a private copy of this template in your GitHub and deploys the agent to your Cloudflare. Everything starts in simulation. To get later agent improvements, use **Configuración → Mi agente → Actualizar mi agente**: it copies the changed `bot/` and `.github/workflows/` files to your repository in one commit and redeploys.
 
 Not financial advice. No profit is guaranteed. See the [disclaimer](AVISO-LEGAL.md#disclaimer-english). MIT licensed.

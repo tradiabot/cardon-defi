@@ -1,0 +1,1 @@
+Nuevo: «Actualizar mi agente» en Configuración. Con un token de GitHub, la app copia a tu repositorio las mejoras publicadas del agente (por ejemplo, el arreglo de «STF» y todos los mercados activables) y lo vuelve a desplegar en tu Cloudflare. Antes de cambiar nada te muestra la lista de archivos; tu wallet, tus claves, tu historial y el modo de cada mercado no cambian.

@@ -198,7 +198,7 @@
   function go(name) {
     step = STEPS.indexOf(name);
     $("setup-count").textContent = step > 0 ? "Paso " + step + " de " + (STEPS.length - 1) : "";
-    $("setup-progress").style.width = (step / (STEPS.length - 1)) * 100 + "%";
+    $("setup-progress").style.width = (step < 0 ? 100 : (step / (STEPS.length - 1)) * 100) + "%";
     $("setup-close").hidden = !accepted() || name === "aviso";
     body.innerHTML = "";
     body.scrollTop = 0;
@@ -454,8 +454,7 @@
     var owner = W.gh.login,
       repo = REPO,
       branch = "main",
-      admin = random(),
-      t0;
+      admin = random();
     $("i-log").innerHTML = "";
     bar(2);
     var l = line("Preparando tu repositorio privado…");
@@ -526,56 +525,10 @@
           });
       })
       .then(function () {
-        var s = line("Lanzando la instalación en tu Cloudflare…"),
-          tries = 0;
-        t0 = Date.now();
-        function dispatch() {
-          return gh("POST", "/repos/" + owner + "/" + repo + "/actions/workflows/instalar.yml/dispatches", { ref: branch }).then(function (r) {
-            if (r.status === 204) return;
-            if ((r.status === 404 || r.status === 422) && tries++ < 12) return wait(5000).then(dispatch);
-            okGh(r, "Lanzar la instalación");
-          });
-        }
-        function watch() {
-          return gh("GET", "/repos/" + owner + "/" + repo + "/actions/workflows/instalar.yml/runs?per_page=3").then(function (r) {
-            okGh(r, "Estado de la instalación");
-            var run = (r.data.workflow_runs || []).filter(function (x) {
-                return Date.parse(x.created_at) >= t0 - 60000;
-              })[0],
-              sec = Math.round((Date.now() - t0) / 1000);
-            if (run && run.status === "completed") {
-              if (run.conclusion === "success") return;
-              throw new Error("la instalación falló en GitHub Actions. Detalle: " + run.html_url);
-            }
-            if (Date.now() - t0 > 12 * 60000) throw new Error("la instalación tarda demasiado; revisa la pestaña Actions de tu repositorio");
-            s.textContent =
-              "Instalando en tu Cloudflare… " + (run ? (run.status === "queued" ? "en cola" : "en curso") : "esperando a GitHub") + " (" + sec + " s)";
-            bar(33 + Math.min(48, sec / 4));
-            return wait(6000).then(watch);
-          });
-        }
-        return dispatch()
-          .then(function () {
-            bar(33);
-            return watch();
-          })
-          .then(function () {
-            s.textContent = "Agente desplegado en tu Cloudflare";
-            s.className = "ok";
-            bar(84);
-          });
+        return deploy(owner, repo, branch);
       })
       .then(function () {
-        var s = line("Leyendo la dirección de tu agente…");
-        return gh("GET", "/repos/" + owner + "/" + repo + "/contents/cardon.json?ref=" + branch).then(function (r) {
-          okGh(r, "cardon.json");
-          var info = parse(atob(String(r.data.content).replace(/\s/g, "")));
-          if (!/^https:\/\/[A-Za-z0-9.-]+$/.test(info.url || "")) throw new Error("dirección del agente inválida");
-          s.textContent = "Tu agente: " + info.url;
-          s.className = "ok";
-          bar(90);
-          return info.url;
-        });
+        return agentUrl(owner, repo, branch);
       })
       .then(function (url) {
         var s = line("Probando la conexión…");
@@ -591,6 +544,59 @@
           });
         });
       });
+  }
+  // Lanza instalar.yml en el repositorio del usuario y espera a que termine (instala o actualiza el Worker).
+  function deploy(owner, repo, branch) {
+    var s = line("Lanzando la instalación en tu Cloudflare…"),
+      tries = 0,
+      t0 = Date.now();
+    function dispatch() {
+      return gh("POST", "/repos/" + owner + "/" + repo + "/actions/workflows/instalar.yml/dispatches", { ref: branch }).then(function (r) {
+        if (r.status === 204) return;
+        if ((r.status === 404 || r.status === 422) && tries++ < 12) return wait(5000).then(dispatch);
+        okGh(r, "Lanzar la instalación");
+      });
+    }
+    function watch() {
+      return gh("GET", "/repos/" + owner + "/" + repo + "/actions/workflows/instalar.yml/runs?per_page=3").then(function (r) {
+        okGh(r, "Estado de la instalación");
+        var run = (r.data.workflow_runs || []).filter(function (x) {
+            return Date.parse(x.created_at) >= t0 - 60000;
+          })[0],
+          sec = Math.round((Date.now() - t0) / 1000);
+        if (run && run.status === "completed") {
+          if (run.conclusion === "success") return;
+          throw new Error("la instalación falló en GitHub Actions. Detalle: " + run.html_url);
+        }
+        if (Date.now() - t0 > 12 * 60000) throw new Error("la instalación tarda demasiado; revisa la pestaña Actions de tu repositorio");
+        s.textContent =
+          "Instalando en tu Cloudflare… " + (run ? (run.status === "queued" ? "en cola" : "en curso") : "esperando a GitHub") + " (" + sec + " s)";
+        bar(33 + Math.min(48, sec / 4));
+        return wait(6000).then(watch);
+      });
+    }
+    return dispatch()
+      .then(function () {
+        bar(33);
+        return watch();
+      })
+      .then(function () {
+        s.textContent = "Agente desplegado en tu Cloudflare";
+        s.className = "ok";
+        bar(84);
+      });
+  }
+  function agentUrl(owner, repo, branch) {
+    var s = line("Leyendo la dirección de tu agente…");
+    return gh("GET", "/repos/" + owner + "/" + repo + "/contents/cardon.json?ref=" + branch).then(function (r) {
+      okGh(r, "cardon.json");
+      var info = parse(atob(String(r.data.content).replace(/\s/g, "")));
+      if (!/^https:\/\/[A-Za-z0-9.-]+$/.test(info.url || "")) throw new Error("dirección del agente inválida");
+      s.textContent = "Tu agente: " + info.url;
+      s.className = "ok";
+      bar(90);
+      return info.url;
+    });
   }
   function session(url, token) {
     return fetch(url + "/api/v1/auth/session", { headers: { authorization: "Bearer " + token } })
@@ -608,6 +614,197 @@
     if (NATIVE && NATIVE.setCloud) NATIVE.setCloud(url);
     location.reload();
   }
+  /* ---------- Actualizar mi agente ---------- */
+  // Copia a tu repositorio, en un solo commit, los archivos del agente que cambiaron en la plantilla
+  // (bot/ y .github/workflows/) y lo vuelve a desplegar. Secretos, base de datos, wallet y modos no se tocan.
+  var SYNC = /^(bot\/|\.github\/workflows\/)/;
+  function files(owner, repo, branch) {
+    return gh("GET", "/repos/" + owner + "/" + repo + "/branches/" + branch).then(function (b) {
+      okGh(b, "Leer " + owner + "/" + repo);
+      return gh("GET", "/repos/" + owner + "/" + repo + "/git/trees/" + b.data.commit.commit.tree.sha + "?recursive=1").then(function (r) {
+        okGh(r, "Archivos de " + owner + "/" + repo);
+        if (r.data.truncated) throw new Error("GitHub no devolvió la lista completa de archivos");
+        var m = {};
+        r.data.tree.forEach(function (e) {
+          if (e.type === "blob" && SYNC.test(e.path)) m[e.path] = e;
+        });
+        return { head: b.data.commit.sha, tree: b.data.commit.commit.tree.sha, files: m };
+      });
+    });
+  }
+  function agentChanges() {
+    var owner = W.gh.login,
+      tpl = (C.plantilla || "tradiabot/cardon-defi").split("/");
+    return gh("GET", "/repos/" + owner + "/" + REPO).then(function (r) {
+      if (r.status === 404) throw new Error("no encuentro el repositorio " + owner + "/" + REPO + " en esa cuenta de GitHub");
+      okGh(r, "Leer tu repositorio");
+      var branch = r.data.default_branch || "main";
+      return Promise.all([files(owner, REPO, branch), files(tpl[0], tpl[1], "main")]).then(function (x) {
+        var mine = x[0],
+          base = x[1].files,
+          list = [];
+        Object.keys(base).forEach(function (p) {
+          var a = mine.files[p];
+          if (!a || a.sha !== base[p].sha || a.mode !== base[p].mode) list.push({ path: p, mode: base[p].mode, sha: base[p].sha, nuevo: !a });
+        });
+        Object.keys(mine.files).forEach(function (p) {
+          if (!base[p]) list.push({ path: p, mode: mine.files[p].mode, sha: null });
+        });
+        return { owner: owner, branch: branch, head: mine.head, tree: mine.tree, tpl: tpl, list: list };
+      });
+    });
+  }
+  function pushChanges(u) {
+    var path = "/repos/" + u.owner + "/" + REPO + "/git",
+      up = u.list.filter(function (c) {
+        return c.sha;
+      }),
+      i = 0,
+      s = line("Copiando " + up.length + " archivos de la plantilla…");
+    function copy() {
+      if (i >= up.length) return;
+      var c = up[i++];
+      return gh("GET", "/repos/" + u.tpl[0] + "/" + u.tpl[1] + "/git/blobs/" + c.sha)
+        .then(function (r) {
+          okGh(r, "Leer " + c.path);
+          return gh("POST", path + "/blobs", { content: String(r.data.content).replace(/\s/g, ""), encoding: "base64" });
+        })
+        .then(function (r) {
+          okGh(r, "Copiar " + c.path);
+          if (r.data.sha !== c.sha) throw new Error(c.path + " no se copió íntegro");
+          bar(4 + (24 * i) / up.length);
+          return copy();
+        });
+    }
+    return copy()
+      .then(function () {
+        s.textContent = "Archivos copiados";
+        s.className = "ok";
+        return gh("POST", path + "/trees", {
+          base_tree: u.tree,
+          tree: u.list.map(function (c) {
+            return { path: c.path, mode: c.mode, type: "blob", sha: c.sha };
+          }),
+        });
+      })
+      .then(function (r) {
+        okGh(r, "Preparar el cambio");
+        return gh("POST", path + "/commits", { message: "Actualizar el agente desde la plantilla " + u.tpl.join("/"), tree: r.data.sha, parents: [u.head] });
+      })
+      .then(function (r) {
+        okGh(r, "Guardar el cambio");
+        return gh("PATCH", path + "/refs/heads/" + u.branch, { sha: r.data.sha });
+      })
+      .then(function (r) {
+        if (r.status === 422) throw new Error("tu repositorio cambió mientras actualizaba; toca Reintentar");
+        okGh(r, "Publicar el cambio");
+        u.pushed = true;
+        line("Código del agente actualizado en " + u.owner + "/" + REPO, "ok");
+        bar(30);
+      });
+  }
+  function applyChanges(u) {
+    // Si el código ya se subió y falló el despliegue, «Reintentar» solo vuelve a desplegar.
+    return (u.pushed ? Promise.resolve() : pushChanges(u))
+      .then(function () {
+        return deploy(u.owner, REPO, u.branch);
+      })
+      .then(function () {
+        return agentUrl(u.owner, REPO, u.branch);
+      })
+      .then(function (url) {
+        var s = line("Probando la conexión…");
+        return session(url, get("dexpilot-token")).then(function () {
+          s.textContent = "Conexión comprobada";
+          s.className = "ok";
+          bar(100);
+          if (url + "/api/v1" !== get("cardon-api")) {
+            set("cardon-api", url + "/api/v1");
+            if (NATIVE && NATIVE.setCloud) NATIVE.setCloud(url);
+          }
+          line("¡Listo! Tu agente ya tiene la última versión.", "ok");
+          W.gh.token = "";
+        });
+      });
+  }
+  SCREENS.actualizar = function () {
+    var u = null;
+    screen(
+      '<span class="eyebrow">MI AGENTE</span><h2>Actualizar mi agente</h2><p>Trae a tu repositorio <b>' +
+        REPO +
+        "</b> las mejoras publicadas del agente y lo vuelve a desplegar en tu Cloudflare. Tu wallet, tus claves, tu historial y el modo de cada mercado no cambian.</p>" +
+        '<ol class="setup-list"><li>Abre <a href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=Cardon%20DeFi%20actualizar">crear token</a>. Ya vienen marcadas <b>repo</b> y <b>workflow</b>.</li><li>En «Expiration» basta con 7 días. Toca <b>Generate token</b>, cópialo y pégalo aquí.</li><li>La app lo usa solo para esta actualización y no lo guarda.</li></ol>' +
+        '<label>Token de GitHub<input id="gh-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…"></label><p id="gh-note" class="setup-note"></p><div class="setup-bar big"><i id="i-bar"></i></div><div id="i-log" class="setup-log"></div>',
+    );
+    var next = nav(
+      null,
+      function () {
+        next.disabled = true;
+        if (u) {
+          $("gh-token").disabled = true;
+          return applyChanges(u)
+            .then(function () {
+              next.textContent = "Cerrar";
+              next.disabled = false;
+              next.onclick = function () {
+                overlay.hidden = true;
+              };
+            })
+            .catch(function (e) {
+              line("No se completó: " + (e.message || e), "bad");
+              if (!u.pushed) {
+                u = null;
+                $("gh-token").disabled = false;
+              }
+              next.disabled = false;
+              next.textContent = "Reintentar";
+            });
+        }
+        var token = $("gh-token").value.trim() || (W.gh && W.gh.token) || "";
+        if (token.length < 20) {
+          next.disabled = false;
+          return note("gh-note", "Pega el token completo.", "bad");
+        }
+        $("i-log").innerHTML = "";
+        bar(2);
+        note("gh-note", "Buscando cambios…");
+        W.gh = { token: token };
+        return gh("GET", "/user")
+          .then(function (r) {
+            if (r.status === 401) throw new Error("GitHub no reconoce ese token");
+            okGh(r, "Comprobar el token");
+            W.gh.login = r.data.login;
+            return agentChanges();
+          })
+          .then(function (x) {
+            next.disabled = false;
+            if (!x.list.length) {
+              note("gh-note", "Tu agente ya tiene la última versión. No hay nada que actualizar.", "ok");
+              W.gh.token = "";
+              next.textContent = "Cerrar";
+              next.onclick = function () {
+                overlay.hidden = true;
+              };
+              return;
+            }
+            u = x;
+            note("gh-note", x.list.length + (x.list.length === 1 ? " archivo cambia" : " archivos cambian") + " en " + x.owner + "/" + REPO + ":", "ok");
+            x.list.forEach(function (c) {
+              line((c.sha ? (c.nuevo ? "+ " : "· ") : "− ") + c.path);
+            });
+            next.textContent = "Actualizar ahora";
+          })
+          .catch(function (e) {
+            next.disabled = false;
+            note("gh-note", "No pude revisar: " + (e.message || e), "bad");
+          });
+      },
+      "Buscar cambios",
+    );
+  };
+  window.cardonUpdateAgent = function () {
+    open("actualizar");
+  };
   window.cardonSetup = function () {
     open(accepted() ? "inicio" : "aviso");
   };
@@ -799,7 +996,7 @@
       '<div class="panel config-form"><div class="panel-title">Dinero real: clave de firma <span class="pill warn">OPCIONAL</span></div><p class="muted">Tu agente empieza en simulación. Para operar con dinero real necesita la clave de firma de tu wallet. Se envía de este teléfono a <b>tu</b> Cloudflare, protegida con tu huella; no pasa por GitHub ni por el desarrollador.</p><label>Account ID de Cloudflare<input id="key-account" autocomplete="off" autocapitalize="off" spellcheck="false"></label><label>Token de Cloudflare<input id="key-token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"></label><button class="wide" onclick="cardonUploadKey()">Guardar la clave en mi nube</button><p id="key-note" class="setup-note"></p></div>',
     );
     var cloud = h(
-      '<div class="panel config-form"><div class="panel-title">Mi agente <span id="agent-state" class="pill warn">SIN INSTALAR</span></div><p id="agent-url" class="muted">Aún no has instalado tu agente.</p><button class="primary wide" onclick="cardonSetup()">Instalar o conectar mi agente</button><button class="wide" style="margin-top:8px" onclick="cardonAviso()">Ver el aviso legal</button></div>',
+      '<div class="panel config-form"><div class="panel-title">Mi agente <span id="agent-state" class="pill warn">SIN INSTALAR</span></div><p id="agent-url" class="muted">Aún no has instalado tu agente.</p><button class="primary wide" onclick="cardonSetup()">Instalar o conectar mi agente</button><button id="agent-update" class="wide" style="margin-top:8px" onclick="cardonUpdateAgent()" hidden>Actualizar mi agente</button><button class="wide" style="margin-top:8px" onclick="cardonAviso()">Ver el aviso legal</button></div>',
     );
     var donate = h(
       '<div class="panel" id="donar"><div class="panel-title"><span>Apoya al desarrollador</span><span class="pill">VOLUNTARIO</span></div><p class="muted">Cardón DeFi es gratis y abierto. Si te sirve, puedes invitarle un café al desarrollador. Envía cada moneda <b>solo por su propia red</b>.</p><div class="don">' +
@@ -828,6 +1025,7 @@
       $("agent-state").textContent = "INSTALADO";
       $("agent-state").className = "pill";
       $("agent-url").textContent = api.replace(/\/api\/v1$/, "");
+      $("agent-update").hidden = false;
     }
   }
   function don(icon, title, address, hint) {
