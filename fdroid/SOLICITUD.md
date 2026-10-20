@@ -1,5 +1,7 @@
 # Solicitud de inclusión en F-Droid
 
+> **Estado:** enviada como [fdroiddata!53007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53007) (CI en verde con 1.0.6) y cerrada el 2026-10-19 por la regla de 3 meses de desarrollo activo (el repo empezó el 2026-10-11). Reabrir esa misma solicitud desde el **2027-01-11**, actualizando la receta a la versión vigente.
+
 Título del merge request en https://gitlab.com/fdroid/fdroiddata:
 
     New app: Cardón DeFi (com.cardondefi.app)

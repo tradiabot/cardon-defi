@@ -5,7 +5,7 @@
 El cardón es el gran cactus del desierto: resistente, valioso y fuerte ante las inclemencias. Cardón DeFi es un agente que opera en exchanges descentralizados con **tu propia wallet y desde tu propia nube**. Nadie más custodia tu dinero ni tus claves, y no existe un servidor central.
 
 - Sitio: https://tradiabot.github.io/cardon/
-- Descarga de la app (Android): [última versión](https://github.com/tradiabot/cardon-defi/releases/latest)
+- Descarga de la app (Android): [última versión](https://github.com/tradiabot/cardon-defi/releases/latest) · o con [Obtainium](https://github.com/ImranR98/Obtainium) para recibir actualizaciones
 - [Aviso legal y descargo de responsabilidad](AVISO-LEGAL.md) · [English](#english)
 
 > **No es asesoría financiera ni garantiza ganancias.** Puedes perder dinero. Todo empieza en simulación.
@@ -78,7 +78,9 @@ Tras cambiar `app/web/`, cópialo a `app/android/app/src/main/assets/web/` antes
 
 ## F-Droid
 
-El proyecto está preparado para F-Droid: licencia MIT, sin dependencias privativas, compilación estándar con Gradle, fichas en `fastlane/metadata/android/` y la receta en [`fdroid/com.cardondefi.app.yml`](fdroid/com.cardondefi.app.yml). Aún no está incluido: falta enviar esa receta a [fdroiddata](https://gitlab.com/fdroid/fdroiddata) y pasar su revisión. F-Droid compila y firma con su propia llave, así que su APK y la de GitHub no se actualizan entre sí.
+El proyecto está preparado para F-Droid: licencia MIT, sin dependencias privativas, compilación estándar con Gradle, fichas en `fastlane/metadata/android/` y la receta en [`fdroid/com.cardondefi.app.yml`](fdroid/com.cardondefi.app.yml). La receta compiló y pasó las 9 comprobaciones de su CI, pero la solicitud ([fdroiddata!53007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/53007)) se cerró porque F-Droid pide al menos 3 meses de desarrollo activo; se reabrirá desde el 11 de enero de 2027. F-Droid compila y firma con su propia llave, así que su APK y la de GitHub no se actualizan entre sí.
+
+Mientras tanto, para recibir actualizaciones automáticas usa [Obtainium](https://github.com/ImranR98/Obtainium): *Añadir app* → `https://github.com/tradiabot/cardon-defi`. Instala y actualiza directamente desde las versiones de GitHub, con la misma firma que el APK de descarga.
 
 ## Estado del piloto
 
