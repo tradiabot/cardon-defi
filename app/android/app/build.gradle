@@ -8,8 +8,8 @@ android {
         applicationId 'com.defipoldot.trading'
         minSdk 23
         targetSdk 34
-        versionCode 57
-        versionName '1.13.3'
+        versionCode 58
+        versionName '1.13.4'
         aaptOptions { ignoreAssetsPattern '!.svn:!*.scc:.*:!CVS:!thumbs.db:!*~' }
     }
     // «publica»: la app que se comparte; viene vacía y cada persona instala su propio agente.
@@ -19,8 +19,8 @@ android {
         publica {
             dimension 'edicion'
             applicationId 'com.cardondefi.app'
-            versionCode 106
-            versionName '1.0.6-piloto'
+            versionCode 107
+            versionName '1.0.7-piloto'
         }
         personal { dimension 'edicion' }
     }

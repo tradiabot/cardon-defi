@@ -11,6 +11,8 @@ export interface Env {
   NTFY_TOPIC?: string;
   MODE: string;
   LIMITS_EDITABLE?: string;
+  /** Cardón Comunidad (opcional); por defecto https://cardon-comunidad.pages.dev */
+  COMUNIDAD_URL?: string;
   GAS_RESERVE_POL: string;
   SLIPPAGE_BPS: string;
   WALLET_ADDRESS: string;

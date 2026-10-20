@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cardón Comunidad</title>
+<style>body{font:16px/1.55 system-ui,sans-serif;max-width:640px;margin:0 auto;padding:24px 16px;background:#0f1412;color:#e6efe9}a{color:#7fd6a4}code{background:#1c2622;padding:1px 5px;border-radius:4px}</style>
+</head>
+<body>
+<h1>Cardón Comunidad</h1>
+<p>Servicio opcional de la app <a href="https://tradiabot.github.io/cardon/">Cardón DeFi</a>. Su código es abierto: <a href="https://github.com/tradiabot/cardon-defi/tree/main/comunidad">comunidad/</a>.</p>
+<h2>Qué guarda</h2>
+<ul>
+<li><b>Registro (voluntario):</b> tu correo, la fecha y la edición de la app. Al registrarte, tu teléfono recibe una llave para borrarlo cuando quieras; aquí solo se guarda su huella (SHA-256). Sirve para avisarte de versiones nuevas y para contar cuántas personas usan la app. No se vende ni se comparte.</li>
+<li><b>Errores y arreglos (voluntario, se activa en la app):</b> el código del error (por ejemplo <code>ia</code> o <code>precio</code>), el arreglo que se probó y si funcionó, con un número aleatorio por agente. Nunca tu wallet, saldos, montos, transacciones, claves ni correo. Se borra a los 180 días.</li>
+<li><b>No guarda IPs.</b> Para limitar abusos usa una huella de la IP con el día, que se borra al día siguiente.</li>
+</ul>
+<p>Uso público: <code>GET /v1/estado</code> (cuántos usuarios y agentes) y <code>GET /v1/arreglos?codigos=ia,precio</code> (qué arreglos funcionan).</p>
+<p class="firma">Hecho xhumanx + IA</p>
+</body>
+</html>

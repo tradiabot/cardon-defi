@@ -5,6 +5,7 @@ import { baseOf } from './venues';
 import { loadAi, testModels, updateAiConfig } from './aiConfig';
 import { callModel, extractJson, modelLabel } from './providers';
 import { runCycle, type Control, type CycleStatus } from './engine';
+import { flushPending, notePending, type ArregloStats } from './comunidad';
 
 /**
  * «Médico» del bot: revisa cada mercado activo, clasifica sus errores y aplica arreglos de una lista cerrada.
@@ -133,22 +134,29 @@ export async function autoDoctor(env: Env, now = Date.now()): Promise<void> {
   const findings = await diagnose(env, now);
   const ia = findings.find(f => f.code === 'ia');
   await putKv(env.DB, 'doctor_auto', { ts: now }, now).run();
+  await flushPending(env, findings, now);
   if (!ia) return;
   const r = await applyFix(env, 'ia_todos', ia.market, now);
   await record(env, [{ ts: now, auto: true, fix: 'ia_todos', market: ia.market, ...r }], now);
+  await notePending(env, 'ia_todos', ia.market, [ia], r.ok, now);
 }
 
 const AI_SYSTEM = `Eres el asistente técnico de un bot de trading en DEX (Polygon y Polkadot) que corre en Cloudflare.
 Recibes los problemas detectados y la lista CERRADA de arreglos disponibles. Explica en español, claro y breve, qué pasa y qué hacer.
 Responde SOLO JSON: {"resumen":"1-2 frases","pasos":["paso concreto", "..."],"arreglos":["id de la lista"]}.
 En "arreglos" pon solo ids de la lista recibida que de verdad ayuden; si ninguno ayuda (por ejemplo, falta depositar fondos), deja la lista vacía y dilo en los pasos.
+Si recibes "comunidad", es lo que funcionó en otros agentes para cada código de error (agentesResueltos = cuántos agentes distintos lo resolvieron así); úsalo para ordenar, sin inventar arreglos fuera de la lista.
 Nunca propongas mover fondos ni cambiar límites.`;
 
 /** La IA explica los hallazgos y elige arreglos de la lista; se filtra a la lista recibida. */
-export async function aiExplain(env: Env, findings: Finding[], now = Date.now()): Promise<{ model: string; resumen: string; pasos: string[]; arreglos: { fix: FixId; market: string | null }[] } | { error: string }> {
+export async function aiExplain(env: Env, findings: Finding[], now = Date.now(), comunidad: Record<string, ArregloStats[]> | null = null): Promise<{ model: string; resumen: string; pasos: string[]; arreglos: { fix: FixId; market: string | null }[] } | { error: string }> {
   if (!findings.length) return { error: 'No hay problemas que explicar' };
   const offered = findings.flatMap(f => f.fixes.map(fix => ({ id: `${fix}${f.market ? `:${f.market}` : ''}`, texto: `${FIXES[fix].text}${f.market ? ` (${f.market})` : ''}` })));
-  const input = { problemas: findings.map(f => ({ mercado: f.market, nivel: f.level, codigo: f.code, detalle: f.detail })), arreglos: offered };
+  const input = {
+    problemas: findings.map(f => ({ mercado: f.market, nivel: f.level, codigo: f.code, detalle: f.detail })),
+    arreglos: offered,
+    ...(comunidad && Object.keys(comunidad).length ? { comunidad: Object.fromEntries(Object.entries(comunidad).map(([k, v]) => [k, v.map(({ arreglo, agentesResueltos, intentos }) => ({ arreglo, agentesResueltos, intentos }))])) } : {}),
+  };
   const ai = await loadAi(env);
   const errors: string[] = [];
   for (const model of ai.models.slice(0, 4)) {

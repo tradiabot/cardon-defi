@@ -1,0 +1,9 @@
+# Cardón Comunidad en Cloudflare Pages (no en workers.dev: su dirección no depende del subdominio de la cuenta).
+name = "cardon-comunidad"
+pages_build_output_dir = "public"
+compatibility_date = "2025-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cardon_comunidad"
+database_id = "88a538f3-20ce-4c04-ab4d-747b594959cd"

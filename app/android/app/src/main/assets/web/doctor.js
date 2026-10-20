@@ -38,6 +38,7 @@
       state.err = d ? null : "sin respuesta";
       state.at = Date.now();
       paint();
+      document.dispatchEvent(new CustomEvent("cardon-doctor", { detail: d }));
       return d;
     });
   }
@@ -123,9 +124,29 @@
         var b = fixButton(id, f.market);
         if (b) card.appendChild(b);
       });
+      var tips = community(f.code);
+      if (tips) card.appendChild(node("small", "doc-com", tips));
       if (!(f.fixes || []).length) card.appendChild(node("small", "muted", "No tiene arreglo automático: toca «Buscar y corregir» para que la IA te explique qué hacer."));
       box.appendChild(card);
     });
+  }
+
+  // Qué funcionó en otros agentes (Cardón Comunidad, si está activada).
+  function community(code) {
+    var c = state.data && state.data.comunidad,
+      list = c && c.arreglos && c.arreglos[code];
+    if (!list || !list.length) return "";
+    var F = (state.data && state.data.fixes) || {};
+    return (
+      "Comunidad: " +
+      list
+        .slice(0, 2)
+        .map(function (a) {
+          var name = F[a.arreglo] ? F[a.arreglo].text : a.arreglo;
+          return name + " lo resolvió en " + a.agentesResueltos + " de " + a.agentes + (a.agentes === 1 ? " agente" : " agentes") + (a.recomendado ? " ✓ recomendado" : "");
+        })
+        .join(" · ")
+    );
   }
 
   function paintLog() {

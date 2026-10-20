@@ -2,7 +2,7 @@
 
 **Agente de Trading Descentralizado · Decentralized Trading Agent** — versión piloto
 
-El cardón es el gran cactus del desierto: resistente, valioso y fuerte ante las inclemencias. Cardón DeFi es un agente que opera en exchanges descentralizados con **tu propia wallet y desde tu propia nube**. Nadie más custodia tu dinero ni tus claves, y no existe un servidor central.
+El cardón es el gran cactus del desierto: resistente, valioso y fuerte ante las inclemencias. Cardón DeFi es un agente que opera en exchanges descentralizados con **tu propia wallet y desde tu propia nube**. Nadie más custodia tu dinero ni tus claves, y tu agente no depende de ningún servidor central (la comunidad opcional solo recibe tu correo si te registras y reportes anónimos de errores si los activas).
 
 - Sitio: https://tradiabot.github.io/cardon/
 - Descarga de la app (Android): [última versión](https://github.com/tradiabot/cardon-defi/releases/latest) · o con [Obtainium](https://github.com/ImranR98/Obtainium) para recibir actualizaciones
@@ -66,6 +66,7 @@ Si la primera subida falla por el enlace `SELF`, quita el bloque `[[services]]`,
 | `app/android/` | Contenedor Android: WebView, wallet local y puentes nativos |
 | `.github/workflows/instalar.yml` | El instalador que corre en el GitHub de cada persona |
 | `brand/` | Logos, iconos y el script que los genera |
+| `comunidad/` | Cardón Comunidad (opcional): registro por correo y errores/arreglos compartidos |
 
 ## Desarrollo
 
@@ -75,6 +76,14 @@ cd app/android && ./gradlew assemblePublicaRelease # compilar la app (ver app/an
 ```
 
 Tras cambiar `app/web/`, cópialo a `app/android/app/src/main/assets/web/` antes de compilar.
+
+## Comunidad (opcional)
+
+[Cardón Comunidad](https://cardon-comunidad.pages.dev/) es el único servicio central, y todo en él es voluntario; su código está en [`comunidad/`](comunidad/) (Cloudflare Pages + D1).
+
+- **Registro:** solo el correo, para avisos de versiones nuevas y para contar cuántas personas usan la app. El teléfono guarda una llave para borrarlo; el servidor solo guarda su SHA-256. La app funciona igual sin registro.
+- **Errores y arreglos:** si lo activas en *Configuración → Comunidad*, tu agente envía el código del error (`ia`, `precio`…), el arreglo de la lista cerrada que probó y si se resolvió, con un id aleatorio. Nunca wallet, saldos, montos, transacciones ni claves. A cambio, *Buscar y corregir* muestra qué funcionó en otros agentes; un arreglo se marca como recomendado cuando lo confirman al menos 3 agentes distintos.
+- No guarda IPs (el límite de uso diario usa una huella de la IP con el día) y borra los reportes a los 180 días.
 
 ## F-Droid
 
@@ -97,7 +106,7 @@ Cardón DeFi es gratis. Si te sirve, en la app (Configuración → Apoya al desa
 
 ## English
 
-Cardón DeFi is a decentralized trading agent, in pilot stage, that trades on DEXs with **your own wallet from your own cloud**. There is no central server and nobody else holds your funds or keys.
+Cardón DeFi is a decentralized trading agent, in pilot stage, that trades on DEXs with **your own wallet from your own cloud**. Your agent needs no central server and nobody else holds your funds or keys (the optional Cardón Community only gets an email, if you sign up, and anonymous error reports, if you turn them on).
 
 Install the Android APK from the [latest release](https://github.com/tradiabot/cardon-defi/releases/latest) and follow the wizard (the app is in Spanish for now). You need a free GitHub account with a token (`repo` + `workflow` scopes), a free Cloudflare account with your Account ID and an *Edit Cloudflare Workers* token plus *Account · D1 · Edit*, and optionally a free Groq key. The app creates a private copy of this template in your GitHub and deploys the agent to your Cloudflare. Everything starts in simulation. To get later agent improvements, use **Configuración → Mi agente → Actualizar mi agente**: it copies the changed `bot/` and `.github/workflows/` files to your repository in one commit and redeploys.
 

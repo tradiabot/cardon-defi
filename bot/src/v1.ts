@@ -1,4 +1,5 @@
 import { aiExplain, applyFix, diagnose, doctorLog, FIXES, record, type FixId } from './doctor';
+import { communityStats, getComunidad, notePending, setComunidad } from './comunidad';
 import { type Env, type Settings } from './config';
 import { type Control, type CycleStatus } from './engine';
 import { loadMarket, type MarketCtx } from './context';
@@ -478,21 +479,31 @@ export async function handleV1(request: Request, env: Env, path: string, url: UR
       return reply({ macro: { ...m, updatedAt: new Date(m.ts).toISOString(), ageMinutes: 0 } });
     }
     case 'GET /doctor': {
-      const [findings, log] = await Promise.all([diagnose(env), doctorLog(env)]);
-      return reply({ checkedAt: new Date().toISOString(), findings, fixes: FIXES, log });
+      const [findings, log, c] = await Promise.all([diagnose(env), doctorLog(env), getComunidad(env)]);
+      const arreglos = c.on && findings.length ? await communityStats(env, findings.map(f => f.code)) : null;
+      return reply({ checkedAt: new Date().toISOString(), findings, fixes: FIXES, log, comunidad: { on: c.on, arreglos } });
     }
     case 'POST /doctor/fix': {
       const fix = String(body.fix ?? '') as FixId;
       if (!(fix in FIXES)) return fail(`Arreglo desconocido: ${fix}`);
       const target = typeof body.market === 'string' ? body.market : null;
       const now = Date.now();
+      const c = await getComunidad(env);
+      const before = c.on ? await diagnose(env, now) : [];
       const r = await applyFix(env, fix, target, now);
       await record(env, [{ ts: now, auto: false, fix, market: target, ...r }], now);
+      await notePending(env, fix, target, before, r.ok, now);
       return reply(r);
     }
     case 'POST /doctor/ai': {
-      const r = await aiExplain(env, await diagnose(env));
+      const [findings, c] = await Promise.all([diagnose(env), getComunidad(env)]);
+      const stats = c.on && findings.length ? await communityStats(env, findings.map(f => f.code)) : null;
+      const r = await aiExplain(env, findings, Date.now(), stats);
       return 'error' in r ? fail(r.error, 409) : reply(r);
+    }
+    case 'POST /doctor/comunidad': {
+      const c = await setComunidad(env, body.on === true, Date.now());
+      return reply({ comunidad: { on: c.on } });
     }
     case 'POST /emergency-stop': {
       const control = await setControl(env, true, 'EMERGENCY STOP desde la app Android');

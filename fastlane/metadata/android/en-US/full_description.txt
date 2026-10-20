@@ -1,4 +1,4 @@
-Cardón DeFi is a decentralized trading agent, in pilot stage. It trades on decentralized exchanges with your own wallet from your own cloud: there is no central server and nobody else holds your funds or keys.
+Cardón DeFi is a decentralized trading agent, in pilot stage. It trades on decentralized exchanges with your own wallet from your own cloud: your agent needs no central server and nobody else holds your funds or keys.
 
 <b>How it works</b>
 • The app creates your wallet on the phone and guides you, step by step, to install your own agent in your free GitHub and Cloudflare accounts.

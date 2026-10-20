@@ -1595,3 +1595,12 @@ button:disabled {
 .doc-log .warn {
   color: var(--yellow);
 }
+
+.doc-com {
+  display: block;
+  margin-top: 6px;
+  color: var(--mint);
+}
+.com-invite {
+  border: 1px solid var(--mint);
+}

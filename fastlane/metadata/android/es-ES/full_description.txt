@@ -1,4 +1,4 @@
-Cardón DeFi es un agente de trading descentralizado, en versión piloto. Opera en exchanges descentralizados con tu propia wallet y desde tu propia nube: no hay servidor central y nadie más custodia tu dinero ni tus claves.
+Cardón DeFi es un agente de trading descentralizado, en versión piloto. Opera en exchanges descentralizados con tu propia wallet y desde tu propia nube: tu agente no necesita ningún servidor central y nadie más custodia tu dinero ni tus claves.
 
 <b>Cómo funciona</b>
 • La app crea tu wallet en el teléfono y te guía, paso a paso, para instalar tu propio agente en tus cuentas gratuitas de GitHub y Cloudflare.
